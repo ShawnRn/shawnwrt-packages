@@ -15,34 +15,64 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y shellcheck
       - name: Check shell script
         run: shellcheck src/usr/bin/shawnwrt-ota
-      - name: Build generic IPK
+      - name: Build generic IPKs
         shell: bash
         run: |
           set -euo pipefail
-          version="$(sed -n 's/^PKG_VERSION:=//p' openwrt/shawnwrt-ota/Makefile)"
-          release="$(sed -n 's/^PKG_RELEASE:=//p' openwrt/shawnwrt-ota/Makefile)"
-          pkg="shawnwrt-ota_${version}-${release}_all.ipk"
-          work="$(mktemp -d)"
 
-          mkdir -p "$work/control" "$work/data/usr/bin" dist
-          install -m 0755 src/usr/bin/shawnwrt-ota "$work/data/usr/bin/shawnwrt-ota"
-          cat > "$work/control/control" <<EOF
-          Package: shawnwrt-ota
+          build_ipk() {
+            local name="$1"
+            local version="$2"
+            local release="$3"
+            local depends="$4"
+            local description="$5"
+            local data_dir="$6"
+            local pkg="${name}_${version}-${release}_all.ipk"
+            local work
+            work="$(mktemp -d)"
+
+            mkdir -p "$work/control" dist
+            cp -a "$data_dir" "$work/data"
+            cat > "$work/control/control" <<EOF
+          Package: ${name}
           Version: ${version}-${release}
           Architecture: all
           Maintainer: Shawn Rain
           Section: admin
           Priority: optional
-          Depends: curl, jsonfilter, libubus, busybox
-          Description: ShawnWrt OTA updater
+          Depends: ${depends}
+          Description: ${description}
           EOF
-          sed -i 's/^          //' "$work/control/control"
+            sed -i 's/^          //' "$work/control/control"
 
-          echo 2.0 > "$work/debian-binary"
-          tar --format=ustar -C "$work/control" -czf "$work/control.tar.gz" .
-          tar --format=ustar -C "$work/data" -czf "$work/data.tar.gz" .
-          (cd "$work" && tar --format=ustar -czf "$GITHUB_WORKSPACE/dist/$pkg" ./debian-binary ./data.tar.gz ./control.tar.gz)
-          sha256sum "dist/$pkg" > "dist/$pkg.sha256"
+            echo 2.0 > "$work/debian-binary"
+            tar --format=ustar --owner=0 --group=0 --numeric-owner -C "$work/control" -czf "$work/control.tar.gz" .
+            tar --format=ustar --owner=0 --group=0 --numeric-owner -C "$work/data" -czf "$work/data.tar.gz" .
+            (cd "$work" && tar --format=ustar --owner=0 --group=0 --numeric-owner -czf "$GITHUB_WORKSPACE/dist/$pkg" ./debian-binary ./data.tar.gz ./control.tar.gz)
+            sha256sum "dist/$pkg" > "dist/$pkg.sha256"
+            rm -rf "$work"
+          }
+
+          cli_version="$(sed -n 's/^PKG_VERSION:=//p' openwrt/shawnwrt-ota/Makefile)"
+          cli_release="$(sed -n 's/^PKG_RELEASE:=//p' openwrt/shawnwrt-ota/Makefile)"
+          cli_data="$(mktemp -d)"
+          mkdir -p "$cli_data/usr/bin"
+          install -m 0755 src/usr/bin/shawnwrt-ota "$cli_data/usr/bin/shawnwrt-ota"
+          build_ipk "shawnwrt-ota" "$cli_version" "$cli_release" \
+            "curl, jsonfilter, libubus, busybox" \
+            "ShawnWrt OTA updater" "$cli_data"
+
+          luci_version="$(sed -n 's/^PKG_VERSION:=//p' openwrt/luci-app-shawnwrt-ota/Makefile)"
+          luci_release="$(sed -n 's/^PKG_RELEASE:=//p' openwrt/luci-app-shawnwrt-ota/Makefile)"
+          luci_data="$(mktemp -d)"
+          cp -a openwrt/luci-app-shawnwrt-ota/root/. "$luci_data/"
+          mkdir -p "$luci_data/www/luci-static/resources/view/system"
+          install -m 0644 \
+            openwrt/luci-app-shawnwrt-ota/htdocs/luci-static/resources/view/system/shawnwrt_ota.js \
+            "$luci_data/www/luci-static/resources/view/system/shawnwrt_ota.js"
+          build_ipk "luci-app-shawnwrt-ota" "$luci_version" "$luci_release" \
+            "shawnwrt-ota, luci-base" \
+            "LuCI support for ShawnWrt OTA" "$luci_data"
       - name: Upload IPK
         uses: actions/upload-artifact@v4
         with:
