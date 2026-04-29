@@ -1,0 +1,50 @@
+name: Package
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  package:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install tools
+        run: sudo apt-get update && sudo apt-get install -y shellcheck binutils
+      - name: Check shell script
+        run: shellcheck src/usr/bin/shawnwrt-ota
+      - name: Build generic IPK
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(sed -n 's/^PKG_VERSION:=//p' openwrt/shawnwrt-ota/Makefile)"
+          release="$(sed -n 's/^PKG_RELEASE:=//p' openwrt/shawnwrt-ota/Makefile)"
+          pkg="shawnwrt-ota_${version}-${release}_all.ipk"
+          work="$(mktemp -d)"
+
+          mkdir -p "$work/control" "$work/data/usr/bin" dist
+          install -m 0755 src/usr/bin/shawnwrt-ota "$work/data/usr/bin/shawnwrt-ota"
+          cat > "$work/control/control" <<EOF
+          Package: shawnwrt-ota
+          Version: ${version}-${release}
+          Architecture: all
+          Maintainer: Shawn Rain
+          Section: admin
+          Priority: optional
+          Depends: curl, jsonfilter, libubus, busybox
+          Description: ShawnWrt OTA updater
+          EOF
+          sed -i 's/^          //' "$work/control/control"
+
+          echo 2.0 > "$work/debian-binary"
+          tar -C "$work/control" -czf "$work/control.tar.gz" .
+          tar -C "$work/data" -czf "$work/data.tar.gz" .
+          (cd "$work" && ar r "$GITHUB_WORKSPACE/dist/$pkg" debian-binary control.tar.gz data.tar.gz)
+          sha256sum "dist/$pkg" > "dist/$pkg.sha256"
+      - name: Upload IPK
+        uses: actions/upload-artifact@v4
+        with:
+          name: shawnwrt-ota-ipk
+          path: dist/*
