@@ -24,6 +24,17 @@ var L = {
 	noInfo: zh ? '暂无 OTA 信息。' : _('No OTA information available.'),
 	done: zh ? '完成。' : _('Done.'),
 	failed: zh ? '命令执行失败，请查看下方输出。' : _('Command failed. Check the output below.'),
+	checkOk: zh ? '检查完成。' : _('Update check completed.'),
+	testOk: zh ? '测试通过，可以安装。' : _('Upgrade test passed. You can install the update.'),
+	downloadOk: zh ? '下载并校验完成。' : _('Download and verification completed.'),
+	installStarted: zh ? '已开始安装，路由器会重启。' : _('Installation started. The router will reboot.'),
+	forceTr3000: zh ? 'TR3000 512MB 兼容性检查已通过：当前系统报告 cudy,tr3000-v1，固件目标为 cudy,tr3000-512mb-v1，这是 ShawnWrt 512MB 固件的预期差异，已安全使用强制兼容测试。' : _('TR3000 512MB compatibility check passed: the running system reports cudy,tr3000-v1 while the image target is cudy,tr3000-512mb-v1. This is expected for ShawnWrt 512MB images, so the forced compatibility test was used safely.'),
+	testPassedLine: zh ? '测试通过：固件已通过 sysupgrade 兼容性检查。' : _('Test passed: the firmware passed the sysupgrade compatibility check.'),
+	shaLine: zh ? 'SHA256 校验通过' : _('SHA256 verified'),
+	downloadLine: zh ? '固件路径' : _('Firmware path'),
+	stateLine: zh ? '状态' : _('State'),
+	installedLine: zh ? '当前已安装' : _('Installed'),
+	latestLine: zh ? '最新版本' : _('Latest'),
 	check: zh ? '检查更新' : _('Check'),
 	test: zh ? '测试升级' : _('Test upgrade'),
 	download: zh ? '下载固件' : _('Download'),
@@ -163,6 +174,62 @@ return view.extend({
 		}
 
 		function showResult(result) {
+			return showResultWithMessage(result);
+		}
+
+		function formatOutput(text) {
+			var lines = escapeText(text).trim().split(/\n/);
+			var mapped = [];
+
+			lines.forEach(function(line) {
+				var value;
+
+				if (!line)
+					return;
+
+				if (line === 'TEST=ok') {
+					mapped.push(L.testPassedLine);
+					return;
+				}
+
+				if (line === 'INFO_FORCE_TR3000=1') {
+					mapped.push(L.forceTr3000);
+					return;
+				}
+
+				if (line.indexOf('SHA256=') === 0) {
+					mapped.push(L.shaLine + ': ' + line.slice(7));
+					return;
+				}
+
+				if (line.indexOf('DOWNLOAD=') === 0) {
+					mapped.push(L.downloadLine + ': ' + line.slice(9));
+					return;
+				}
+
+				if (line.indexOf('STATE=') === 0) {
+					value = line.slice(6);
+					mapped.push(L.stateLine + ': ' + (value === 'current' ? L.currentTitle : value === 'update' ? L.updateTitle : L.unknownTitle));
+					return;
+				}
+
+				if (line.indexOf('INSTALLED_TAG=') === 0) {
+					mapped.push(L.installedLine + ': ' + (line.slice(14) || L.unknown));
+					return;
+				}
+
+				if (line.indexOf('TAG=') === 0) {
+					mapped.push(L.latestLine + ': ' + line.slice(4));
+					return;
+				}
+
+				mapped.push(line);
+			});
+
+			return mapped.join('\n');
+		}
+
+		function showResultWithMessage(result, successMessage) {
 			var text = '';
 
 			if (result.stdout)
@@ -171,10 +238,12 @@ return view.extend({
 			if (result.stderr)
 				text += (text ? '\n\n' : '') + result.stderr.trim();
 
-			output.textContent = text || L.done;
+			output.textContent = formatOutput(text) || successMessage || L.done;
 
 			if (!result.ok)
 				ui.addNotification(null, E('p', L.failed), 'danger');
+			else if (successMessage)
+				ui.addNotification(null, E('p', successMessage), 'success');
 		}
 
 		function helpSection(title, items) {
@@ -203,10 +272,12 @@ return view.extend({
 			]);
 		}
 
-		function action(button, args) {
+		function action(button, args, successMessage) {
 			setBusy(button, true);
 
-			return runOta(args).then(showResult).finally(function() {
+			return runOta(args).then(function(result) {
+				showResultWithMessage(result, successMessage);
+			}).finally(function() {
 				setBusy(button, false);
 			});
 		}
@@ -256,11 +327,11 @@ return view.extend({
 		});
 
 		testButton.addEventListener('click', function() {
-			return action(testButton, ['test']);
+			return action(testButton, ['test'], L.testOk);
 		});
 
 		downloadButton.addEventListener('click', function() {
-			return action(downloadButton, ['download']);
+			return action(downloadButton, ['download'], L.downloadOk);
 		});
 
 		markButton.addEventListener('click', function() {
@@ -283,7 +354,7 @@ return view.extend({
 						'class': 'btn cbi-button-negative',
 						'click': function() {
 							ui.hideModal();
-							return action(installButton, ['install']);
+							return action(installButton, ['install'], L.installStarted);
 						}
 					}, [L.install])
 				])
