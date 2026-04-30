@@ -16,7 +16,7 @@ Supported boards:
 The package workflow publishes a signed opkg feed to the `opkg` branch:
 
 ```sh
-src/gz shawnwrt_ota https://gcore.jsdelivr.net/gh/ShawnRn/shawnwrt-ota@opkg
+src/gz shawnwrt_ota https://raw.githubusercontent.com/ShawnRn/shawnwrt-ota/opkg
 ```
 
 Firmware builds include the feed public key, so `opkg update` can keep normal
