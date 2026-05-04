@@ -1,29 +1,35 @@
-# ShawnWrt OTA
+# ShawnWrt Packages
 
-Small OTA helper for ShawnWrt builds.
+OpenWrt package feed for ShawnWrt builds. This repository publishes the
+router-side packages that are useful both as built-in firmware components and
+as post-flash `opkg` updates.
 
-It detects the local router board, finds the matching sysupgrade image in the
-latest GitHub Release, verifies the GitHub SHA256 digest, and can run
-`sysupgrade -T` before installing.
+## Packages
 
-Supported boards:
-
-- `cudy_tr3000-512mb-v1`
-- `qihoo_360t7`
+- `shawnwrt-ota`: safe OTA helper for ShawnWrt firmware releases.
+- `luci-app-shawnwrt-ota`: LuCI page for checking, testing, downloading, and
+  installing OTA updates.
+- `luci-app-shawnwrt-channel-analysis`: MTK Wi-Fi channel analysis with
+  spectrum-style charts and suggested channel application.
+- `luci-app-shawnwrt-quickstart`: source-bundled QuickStart homepage only. It
+  removes iStore, NetworkGuide, NAS, RAID, quickwifi, and online installer
+  dependencies, and provides a local status API with CPU temperature support.
 
 ## Opkg Feed
 
 The package workflow publishes a signed opkg feed to the `opkg` branch:
 
 ```sh
-src/gz shawnwrt_ota https://raw.githubusercontent.com/ShawnRn/shawnwrt-ota/opkg
+src/gz shawnwrt_packages https://raw.githubusercontent.com/ShawnRn/shawnwrt-packages/opkg
 ```
 
 Firmware builds include the feed public key, so `opkg update` can keep normal
 signature verification enabled.
 
-GitHub Pages also mirrors the same files for browser inspection:
-<https://shawnrn.github.io/shawnwrt-ota/>
+GitHub Pages mirrors the same files for browser inspection:
+<https://shawnrn.github.io/shawnwrt-packages/>
+
+## OTA Usage
 
 Commands:
 
@@ -34,23 +40,21 @@ shawnwrt-ota test
 shawnwrt-ota install
 ```
 
+Supported OTA boards:
+
+- `cudy_tr3000-512mb-v1`
+- `qihoo_360t7`
+
 `install` preserves config and records installed packages through
 `sysupgrade -k`.
 
-## LuCI Usage
+In LuCI, open **System -> ShawnWrt OTA**.
 
-Open **System -> ShawnWrt OTA**.
+## Build
 
-Recommended flow:
+```sh
+scripts/build-opkg-feed.sh
+```
 
-1. Click **Check** to compare the installed release with the latest GitHub
-   Release.
-2. If an update is available, click **Test upgrade** first. This downloads the
-   matching sysupgrade image, verifies SHA256, and runs `sysupgrade -T` without
-   flashing.
-3. Click **Install update** only after the test passes. The helper downloads,
-   verifies, tests, and installs the image while preserving configuration.
-4. Use **Download** only when you want to keep the firmware file without
-   installing it.
-
-The LuCI page includes a small **?** help button with the same guidance.
+The output is written to `dist/`. CI signs and publishes the feed when the
+`SHAWNWRT_OTA_USIGN_SECRET_KEY` secret is available.
