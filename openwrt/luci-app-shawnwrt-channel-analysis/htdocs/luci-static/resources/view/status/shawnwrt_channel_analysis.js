@@ -298,9 +298,7 @@ return view.extend({
 			}).length;
 			var suggested = radio.scanned ? scoreChannels(radio.freqs, radio.aps) : '-';
 			var bandTitle = radio.band === '2g' ? '2.4 GHz' : radio.band === '5g' ? '5 GHz' : radio.band;
-			var configChannel = String(radio.configChannel || '').toLowerCase();
-			var canApply = radio.scanned && suggested && suggested !== '-' &&
-				(configChannel === 'auto' || Number(configChannel) !== Number(suggested));
+			var canApply = radio.scanned && suggested && suggested !== '-';
 
 				var btnAttrs = {
 					'class': 'btn cbi-button cbi-button-action shawnwrt-channel-apply',
@@ -323,7 +321,7 @@ return view.extend({
 						E('div', [ E('b', [ radio.scanned ? String(sameChannel) : '-' ]), E('span', [ _('Same-channel APs') ]) ]),
 						E('div', [ E('b', [ suggested ]), E('span', [ _('Suggested channel') ]) ])
 					]),
-					E('button', btnAttrs, [ canApply ? _('Apply suggested channel') : _('Already using suggested channel') ])
+					E('button', btnAttrs, [ canApply ? _('Apply suggested channel') : _('No suggested channel') ])
 				]);
 			}
 
@@ -339,7 +337,7 @@ return view.extend({
 			});
 			var self = ownAp(radio);
 			var ticks, minCh, maxCh, signalMin = -95, signalMax = -10;
-			var width = 1200, height = 330, padL = 46, padR = 22, padT = 28, padB = 42;
+			var width = 1240, height = 380, padL = 38, padR = 12, padT = 18, padB = 36;
 			var plotW = width - padL - padR;
 			var plotH = height - padT - padB;
 			var children = [];
@@ -554,7 +552,7 @@ return view.extend({
 				return E('div', { 'class': 'shawnwrt-aplist' }, [ E('p', { 'class': 'shawnwrt-channel-muted' }, [ _('No scan results. Try refreshing after a few seconds.') ]) ]);
 			var items = sorted.map(function(ap) {
 				var sigPct = Math.min(100, Math.max(0, (Number(ap.signal || -100) + 100) * 1.25));
-				return E('div', { 'class': 'shawnwrt-apitem', 'title': (ap.bssid || '') + ' | ' + channelWidth(ap) }, [
+				return E('div', { 'class': 'shawnwrt-apitem' }, [
 					E('span', { 'class': 'shawnwrt-apitem-ssid' }, [ ap.ssid || _('hidden') ]),
 					E('span', { 'class': 'shawnwrt-apitem-ch' }, [ 'CH ' + (ap.channel || '-') ]),
 					E('span', { 'class': 'shawnwrt-apitem-sig' }, [
@@ -648,17 +646,29 @@ return view.extend({
 
 		function scanAll(ev) {
 			var btn = ev && ev.currentTarget;
-			if (btn) {
-				btn.classList.add('spinning');
-				btn.disabled = true;
-				btn.textContent = _('Scanning...');
-			}
-			Promise.all(radios.map(scanRadio)).finally(function() {
-				if (btn) {
-					btn.classList.remove('spinning');
-					btn.disabled = false;
-					btn.textContent = _('Refresh Channels');
+
+			function setScanButton(scanning) {
+				if (!btn)
+					return;
+
+				btn.classList.toggle('is-scanning', scanning);
+				btn.disabled = scanning;
+				if (scanning) {
+					btn.replaceChildren(
+						E('span', { 'class': 'shawnwrt-spinner', 'aria-hidden': 'true' }),
+						document.createTextNode(_('Scanning...'))
+					);
 				}
+				else {
+					btn.replaceChildren(document.createTextNode(_('Refresh Channels')));
+				}
+			}
+
+			if (btn) {
+				setScanButton(true);
+			}
+			return Promise.all(radios.map(scanRadio)).finally(function() {
+				setScanButton(false);
 			});
 		}
 
@@ -676,12 +686,14 @@ return view.extend({
 					--swrt-tooltip-bg: #ffffff;
 					--swrt-tooltip-fg: rgba(0,0,0,.86);
 					--swrt-tooltip-border: rgba(0,0,0,.14);
-					max-width: 96rem;
+					max-width: 108rem;
 					margin: 0 auto;
 				}
 				.shawnwrt-channel-titlebar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
 				.shawnwrt-channel-titlebar h2 { margin: 0; }
-				.shawnwrt-dual-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+				.shawnwrt-channel-refresh { min-width: 7.5rem; display: inline-flex; align-items: center; justify-content: center; gap: .45rem; }
+				.shawnwrt-channel-refresh.is-scanning { cursor: progress; opacity: .92; }
+				.shawnwrt-dual-col { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .9rem; }
 				@media (max-width: 960px) { .shawnwrt-dual-col { grid-template-columns: 1fr; } }
 				.shawnwrt-radio-col { display: flex; flex-direction: column; gap: .75rem; min-width: 0; }
 				.shawnwrt-channel-card { border: 1px solid var(--swrt-panel-border); border-radius: 10px; padding: .85rem 1rem; background: var(--swrt-panel); }
@@ -695,15 +707,15 @@ return view.extend({
 				.shawnwrt-channel-metrics span { color: var(--swrt-muted); font-size: .78rem; }
 				.shawnwrt-channel-apply { margin-top: .6rem; width: 100%; }
 				@keyframes shawnwrt-spin { to { transform: rotate(360deg); } }
-				.shawnwrt-spinner { display: inline-block; width: 1.1em; height: 1.1em; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: shawnwrt-spin .75s linear infinite; vertical-align: text-bottom; margin-right: .5em; opacity: .8; }
-				.shawnwrt-spectrum-section { border: 1px solid var(--swrt-panel-border); border-radius: 10px; padding: .75rem; background: var(--swrt-panel); position: relative; }
+				.shawnwrt-spinner { display: inline-block; width: 1.05em; height: 1.05em; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: shawnwrt-spin .72s linear infinite; vertical-align: -.12em; opacity: .86; transform-origin: center; }
+				.shawnwrt-spectrum-section { border: 1px solid var(--swrt-panel-border); border-radius: 10px; padding: .68rem; background: var(--swrt-panel); position: relative; }
 				@keyframes shawnwrt-fs-in { from { opacity: 0; } to { opacity: 1; } }
 				@keyframes shawnwrt-fs-out { from { opacity: 1; } to { opacity: 0; } }
 				@keyframes shawnwrt-ov-in { from { opacity: 0; } to { opacity: 1; } }
 				@keyframes shawnwrt-ov-out { from { opacity: 1; } to { opacity: 0; } }
 				.shawnwrt-spectrum-section.is-fullscreen { position: fixed; inset: 0; margin: auto; z-index: 9990; width: 92vw; max-width: 72rem; height: fit-content; max-height: 88vh; border-radius: 12px; padding: 1.25rem; overflow-y: auto; box-shadow: 0 24px 80px rgba(0,0,0,.32); animation: shawnwrt-fs-in .22s ease forwards; background: #fff; }
 				.shawnwrt-spectrum-section.is-closing { animation: shawnwrt-fs-out .18s ease forwards; }
-				.shawnwrt-spectrum-section.is-fullscreen .shawnwrt-spectrum-svg { min-width: 0; height: auto; max-height: 60vh; }
+				.shawnwrt-spectrum-section.is-fullscreen .shawnwrt-spectrum-svg { min-width: 0; height: auto; max-height: 66vh; }
 				.shawnwrt-spectrum-section.is-fullscreen .shawnwrt-zoom-btn { font-size: 1rem; }
 				.shawnwrt-fs-overlay { display: none; position: fixed; inset: 0; z-index: 9989; background: rgba(0,0,0,.45); animation: shawnwrt-ov-in .25s ease forwards; }
 				.shawnwrt-fs-overlay.is-closing { animation: shawnwrt-ov-out .2s ease forwards; }
@@ -715,19 +727,19 @@ return view.extend({
 				.shawnwrt-zoom-btn:hover { opacity: 1; }
 				.shawnwrt-zoom-btn::after { content: ''; }
 				.shawnwrt-spectrum-scroll { overflow-x: auto; border-radius: 6px; background: #f5f5f7; }
-				.shawnwrt-spectrum-svg { display: block; width: 100%; min-width: 28rem; height: 13rem; background: #f5f5f7; }
+				.shawnwrt-spectrum-svg { display: block; width: 100%; min-width: 36rem; height: 16.5rem; background: #f5f5f7; }
 				.shawnwrt-spectrum-bg { fill: var(--swrt-spectrum-bg); }
 				.shawnwrt-spectrum-grid { stroke: var(--swrt-spectrum-grid); stroke-dasharray: 3 5; }
 				.shawnwrt-spectrum-axis, .shawnwrt-spectrum-tick { stroke: var(--swrt-spectrum-axis); }
-				.shawnwrt-spectrum-y { fill: var(--swrt-spectrum-label); font-size: .9rem; font-weight: 650; }
-				.shawnwrt-spectrum-x { fill: var(--swrt-spectrum-label); font-size: .85rem; font-weight: 650; }
+				.shawnwrt-spectrum-y { fill: var(--swrt-spectrum-label); font-size: 1rem; font-weight: 700; }
+				.shawnwrt-spectrum-x { fill: var(--swrt-spectrum-label); font-size: .98rem; font-weight: 700; }
 				.shawnwrt-spectrum-x.is-current { fill: #f2994a; }
 				.shawnwrt-spectrum-x.is-best { fill: #2ecc71; }
 				.shawnwrt-ap-shape rect { fill-opacity: .20; stroke-opacity: .78; stroke-width: 2.2; }
 				.shawnwrt-ap-shape:hover rect { fill-opacity: .34; stroke-opacity: .95; stroke-width: 3.4; }
 				.shawnwrt-ap-shape.is-self rect { fill: url(#shawnwrt-hatch); fill-opacity: .72; stroke: #f2994a !important; stroke-width: 3; }
-				.shawnwrt-ap-label { fill: var(--swrt-spectrum-label-strong); font-size: .86rem; font-weight: 750; text-anchor: middle; paint-order: stroke; stroke: var(--swrt-spectrum-bg); stroke-width: 3; stroke-linejoin: round; pointer-events: none; }
-				.shawnwrt-ap-label.is-self { fill: #bf6b22; font-size: .95rem; }
+				.shawnwrt-ap-label { fill: var(--swrt-spectrum-label-strong); font-size: .98rem; font-weight: 780; text-anchor: middle; paint-order: stroke; stroke: var(--swrt-spectrum-bg); stroke-width: 3.5; stroke-linejoin: round; pointer-events: none; }
+				.shawnwrt-ap-label.is-self { fill: #bf6b22; font-size: 1.06rem; }
 				.shawnwrt-spectrum-tooltip { position: fixed; z-index: 9999; max-width: 18rem; padding: .65rem .75rem; border: 1px solid var(--swrt-tooltip-border); border-radius: 8px; background: var(--swrt-tooltip-bg); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); color: var(--swrt-tooltip-fg); box-shadow: 0 12px 28px rgba(0,0,0,.18); pointer-events: none; display: grid; gap: .18rem; font-size: .86rem; line-height: 1.35; }
 				.shawnwrt-spectrum-tooltip b { font-size: .95rem; margin-bottom: .15rem; overflow-wrap: anywhere; }
 				.shawnwrt-spectrum-tooltip span { color: inherit; opacity: .78; }
@@ -775,7 +787,7 @@ return view.extend({
 			E('div', { 'class': 'shawnwrt-channel-titlebar' }, [
 				E('h2', [ _('Channel Analysis') ]),
 				E('button', {
-					'class': 'btn cbi-button cbi-button-action',
+					'class': 'btn cbi-button cbi-button-action shawnwrt-channel-refresh',
 					'click': scanAll
 				}, [ _('Refresh Channels') ])
 			]),

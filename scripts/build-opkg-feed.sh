@@ -64,6 +64,126 @@ add_package_index() {
 	rm -rf "${meta}"
 }
 
+compile_lmo() {
+	local po_file="$1"
+	local lmo_file="$2"
+
+	python3 - "$po_file" "$lmo_file" <<'PY'
+import ast
+import struct
+import sys
+
+po_file, lmo_file = sys.argv[1], sys.argv[2]
+
+
+def sfh_hash(data: bytes, init: int) -> int:
+    if not data:
+        return 0
+
+    h = init & 0xFFFFFFFF
+    length = len(data)
+    rem = length & 3
+    end = length - rem
+    off = 0
+
+    def get16(pos):
+        return data[pos] | (data[pos + 1] << 8)
+
+    while off < end:
+        h = (h + get16(off)) & 0xFFFFFFFF
+        tmp = ((get16(off + 2) << 11) ^ h) & 0xFFFFFFFF
+        h = (((h << 16) & 0xFFFFFFFF) ^ tmp) & 0xFFFFFFFF
+        off += 4
+        h = (h + (h >> 11)) & 0xFFFFFFFF
+
+    if rem == 3:
+        h = (h + get16(off)) & 0xFFFFFFFF
+        h ^= (h << 16) & 0xFFFFFFFF
+        b = data[off + 2]
+        if b >= 128:
+            b -= 256
+        h ^= (b << 18) & 0xFFFFFFFF
+        h = (h + (h >> 11)) & 0xFFFFFFFF
+    elif rem == 2:
+        h = (h + get16(off)) & 0xFFFFFFFF
+        h ^= (h << 11) & 0xFFFFFFFF
+        h = (h + (h >> 17)) & 0xFFFFFFFF
+    elif rem == 1:
+        b = data[off]
+        if b >= 128:
+            b -= 256
+        h = (h + b) & 0xFFFFFFFF
+        h ^= (h << 10) & 0xFFFFFFFF
+        h = (h + (h >> 1)) & 0xFFFFFFFF
+
+    h ^= (h << 3) & 0xFFFFFFFF
+    h = (h + (h >> 5)) & 0xFFFFFFFF
+    h ^= (h << 4) & 0xFFFFFFFF
+    h = (h + (h >> 17)) & 0xFFFFFFFF
+    h ^= (h << 25) & 0xFFFFFFFF
+    h = (h + (h >> 6)) & 0xFFFFFFFF
+    return h & 0xFFFFFFFF
+
+
+def unquote_po(line: str) -> str:
+    return ast.literal_eval(line[line.find('"'):])
+
+
+entries = []
+current = None
+
+
+def flush():
+    global current
+    if not current:
+        return
+    msgid = current.get("msgid", "")
+    msgstr = current.get("msgstr", "")
+    if msgid and msgstr and msgid != msgstr:
+        key = msgid.encode("utf-8")
+        val = msgstr.encode("utf-8")
+        entries.append((sfh_hash(key, len(key)), 1, val))
+    current = None
+
+
+with open(po_file, "r", encoding="utf-8") as f:
+    active = None
+    for raw in f:
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("msgid "):
+            flush()
+            current = {"msgid": unquote_po(line), "msgstr": ""}
+            active = "msgid"
+        elif line.startswith("msgstr "):
+            if current is None:
+                current = {"msgid": "", "msgstr": ""}
+            current["msgstr"] = unquote_po(line)
+            active = "msgstr"
+        elif line.startswith('"') and active and current is not None:
+            current[active] += unquote_po(line)
+    flush()
+
+payload = bytearray()
+index = []
+for key_id, plural_count, val in entries:
+    offset = len(payload)
+    payload.extend(val)
+    while len(payload) % 4:
+        payload.append(0)
+    index.append((key_id, plural_count, offset, len(val)))
+
+index.sort(key=lambda item: item[0])
+with open(lmo_file, "wb") as out:
+    out.write(payload)
+    for item in index:
+        out.write(struct.pack(">IIII", *item))
+    if payload:
+        out.write(struct.pack(">I", len(payload)))
+PY
+}
+
 cli_version="$(sed -n 's/^PKG_VERSION:=//p' "${repo_root}/openwrt/shawnwrt-ota/Makefile")"
 cli_release="$(sed -n 's/^PKG_RELEASE:=//p' "${repo_root}/openwrt/shawnwrt-ota/Makefile")"
 cli_data="$(mktemp -d)"
@@ -99,6 +219,10 @@ mkdir -p "${channel_data}/www/luci-static/resources/view/status"
 install -m 0644 \
 	"${repo_root}/openwrt/luci-app-shawnwrt-channel-analysis/htdocs/luci-static/resources/view/status/shawnwrt_channel_analysis.js" \
 	"${channel_data}/www/luci-static/resources/view/status/shawnwrt_channel_analysis.js"
+mkdir -p "${channel_data}/usr/lib/lua/luci/i18n"
+compile_lmo \
+	"${repo_root}/openwrt/luci-app-shawnwrt-channel-analysis/po/zh-cn/shawnwrt-channel-analysis.po" \
+	"${channel_data}/usr/lib/lua/luci/i18n/shawnwrt-channel-analysis.zh-cn.lmo"
 build_ipk "luci-app-shawnwrt-channel-analysis" "${channel_version}" "${channel_release}" \
 	"rpcd-mod-iwinfo, iwinfo" \
 	"ShawnWrt MTK channel analysis" "${channel_data}"
