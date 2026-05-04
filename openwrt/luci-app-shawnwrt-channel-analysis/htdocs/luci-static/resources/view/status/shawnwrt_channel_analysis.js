@@ -337,7 +337,7 @@ return view.extend({
 			});
 			var self = ownAp(radio);
 			var ticks, minCh, maxCh, signalMin = -95, signalMax = -10;
-			var width = 1240, height = 380, padL = 38, padR = 12, padT = 18, padB = 36;
+			var width = 960, height = 470, padL = 42, padR = 16, padT = 24, padB = 44;
 			var plotW = width - padL - padR;
 			var plotH = height - padT - padB;
 			var children = [];
@@ -512,7 +512,10 @@ return view.extend({
 			}
 
 			if (radio.scanning)
-				children.push(E('p', { 'class': 'shawnwrt-channel-muted' }, [ _('Scanning nearby APs...') ]));
+				children.push(E('p', { 'class': 'shawnwrt-channel-muted shawnwrt-scan-inline' }, [
+					E('span', { 'class': 'shawnwrt-spinner', 'aria-hidden': 'true' }),
+					_('Scanning nearby APs...')
+				]));
 			if (radio.scanError)
 				children.push(E('p', { 'class': 'shawnwrt-channel-error' }, [ radio.scanError ]));
 
@@ -520,7 +523,7 @@ return view.extend({
 				svgEl('svg', {
 					'class': 'shawnwrt-spectrum-svg',
 					'viewBox': '0 0 %d %d'.format(width, height),
-					'preserveAspectRatio': 'xMidYMid meet',
+					'preserveAspectRatio': 'none',
 					'role': 'img',
 					'aria-label': _('Wireless spectrum chart')
 				}, svgNodes)
@@ -542,7 +545,10 @@ return view.extend({
 		function apListCompact(radio) {
 			if (radio.scanning) {
 				return E('div', { 'class': 'shawnwrt-aplist' }, [
-					E('p', { 'class': 'shawnwrt-channel-muted' }, [ _('Scanning nearby APs...') ])
+					E('p', { 'class': 'shawnwrt-channel-muted shawnwrt-scan-inline' }, [
+						E('span', { 'class': 'shawnwrt-spinner', 'aria-hidden': 'true' }),
+						_('Scanning nearby APs...')
+					])
 				]);
 			}
 			var sorted = radio.aps.slice().sort(function(a, b) {
@@ -645,7 +651,8 @@ return view.extend({
 		}
 
 		function scanAll(ev) {
-			var btn = ev && ev.currentTarget;
+			var btn = (ev && ev.currentTarget) || document.querySelector('.shawnwrt-channel-refresh');
+			var startedAt = Date.now();
 
 			function setScanButton(scanning) {
 				if (!btn)
@@ -668,7 +675,13 @@ return view.extend({
 				setScanButton(true);
 			}
 			return Promise.all(radios.map(scanRadio)).finally(function() {
-				setScanButton(false);
+				var wait = Math.max(0, 650 - (Date.now() - startedAt));
+				return new Promise(function(resolve) {
+					window.setTimeout(function() {
+						setScanButton(false);
+						resolve();
+					}, wait);
+				});
 			});
 		}
 
@@ -693,6 +706,7 @@ return view.extend({
 				.shawnwrt-channel-titlebar h2 { margin: 0; }
 				.shawnwrt-channel-refresh { min-width: 7.5rem; display: inline-flex; align-items: center; justify-content: center; gap: .45rem; }
 				.shawnwrt-channel-refresh.is-scanning { cursor: progress; opacity: .92; }
+				.shawnwrt-scan-inline { display: inline-flex; align-items: center; gap: .45rem; margin: .35rem 0 .55rem; }
 				.shawnwrt-dual-col { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .9rem; }
 				@media (max-width: 960px) { .shawnwrt-dual-col { grid-template-columns: 1fr; } }
 				.shawnwrt-radio-col { display: flex; flex-direction: column; gap: .75rem; min-width: 0; }
@@ -726,8 +740,8 @@ return view.extend({
 				.shawnwrt-zoom-btn { border: none; background: none; cursor: pointer; font-size: 1.2rem; padding: .1rem .3rem; opacity: .5; transition: opacity .15s; line-height: 1; }
 				.shawnwrt-zoom-btn:hover { opacity: 1; }
 				.shawnwrt-zoom-btn::after { content: ''; }
-				.shawnwrt-spectrum-scroll { overflow-x: auto; border-radius: 6px; background: #f5f5f7; }
-				.shawnwrt-spectrum-svg { display: block; width: 100%; min-width: 36rem; height: 16.5rem; background: #f5f5f7; }
+				.shawnwrt-spectrum-scroll { overflow: hidden; border-radius: 6px; background: #f5f5f7; }
+				.shawnwrt-spectrum-svg { display: block; width: 100%; min-width: 0; height: clamp(17rem, 22vw, 22rem); background: #f5f5f7; }
 				.shawnwrt-spectrum-bg { fill: var(--swrt-spectrum-bg); }
 				.shawnwrt-spectrum-grid { stroke: var(--swrt-spectrum-grid); stroke-dasharray: 3 5; }
 				.shawnwrt-spectrum-axis, .shawnwrt-spectrum-tick { stroke: var(--swrt-spectrum-axis); }
