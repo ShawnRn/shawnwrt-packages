@@ -91,6 +91,19 @@ build_ipk "luci-app-shawnwrt-ota" "${luci_version}" "${luci_release}" \
 	"LuCI support for ShawnWrt OTA" "${luci_data}"
 rm -rf "${luci_data}"
 
+channel_version="$(sed -n 's/^PKG_VERSION:=//p' "${repo_root}/openwrt/luci-app-shawnwrt-channel-analysis/Makefile")"
+channel_release="$(sed -n 's/^PKG_RELEASE:=//p' "${repo_root}/openwrt/luci-app-shawnwrt-channel-analysis/Makefile")"
+channel_data="$(mktemp -d)"
+cp -a "${repo_root}/openwrt/luci-app-shawnwrt-channel-analysis/root/." "${channel_data}/"
+mkdir -p "${channel_data}/www/luci-static/resources/view/status"
+install -m 0644 \
+	"${repo_root}/openwrt/luci-app-shawnwrt-channel-analysis/htdocs/luci-static/resources/view/status/shawnwrt_channel_analysis.js" \
+	"${channel_data}/www/luci-static/resources/view/status/shawnwrt_channel_analysis.js"
+build_ipk "luci-app-shawnwrt-channel-analysis" "${channel_version}" "${channel_release}" \
+	"rpcd-mod-iwinfo, iwinfo" \
+	"ShawnWrt MTK channel analysis" "${channel_data}"
+rm -rf "${channel_data}"
+
 : > "${dist_dir}/Packages"
 for ipk in "${dist_dir}"/*.ipk; do
 	add_package_index "${ipk}"
