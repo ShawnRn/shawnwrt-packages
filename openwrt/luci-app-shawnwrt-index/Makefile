@@ -1,6 +1,6 @@
 include $(TOPDIR)/rules.mk
 
-PKG_NAME:=luci-app-shawnwrt-quickstart
+PKG_NAME:=luci-app-shawnwrt-index
 PKG_VERSION:=0.12.9
 PKG_RELEASE:=r1
 
