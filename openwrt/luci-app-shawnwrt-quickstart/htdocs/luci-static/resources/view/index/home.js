@@ -200,12 +200,12 @@ return view.extend({
 		var elMemPct=E('span',{},['0%']);
 		var elMemBar=E('div',{class:'sw-bar-fill',style:'width:0%;background:#5856d6'});
 		var elTemp=E('span',{},['--']);
+		var elTempBar=E('div',{class:'sw-bar-fill',style:'width:0%;background:#ff9500'});
 		var elIfBox=E('div',{});
 
 		/* Header */
 		var hdrRight=E('div',{class:'sw-hdr-right'},[
-			E('div',{class:'sw-pill'},[E('span',{innerHTML:IC.clock}),' ',elUptime]),
-			E('div',{class:'sw-pill'},[elDot,' ',elNetText])
+			E('div',{class:'sw-pill'},[E('span',{innerHTML:IC.clock}),' ',elUptime,' · ',elDot,' ',elNetText])
 		]);
 		if(hasUpdate){
 			hdrRight.appendChild(E('a',{class:'sw-pill sw-ota-pill',href:L.url('admin/system/shawnwrt-ota')},[
@@ -261,7 +261,8 @@ return view.extend({
 					E('div',{class:'sw-res-item'},[
 						E('div',{class:'sw-res-icon',innerHTML:IC.temp}),
 						E('div',{class:'sw-res-info'},[
-							E('div',{class:'sw-res-top'},[E('span',{},['温度']),elTemp])
+							E('div',{class:'sw-res-top'},[E('span',{},['温度']),elTemp]),
+							E('div',{class:'sw-bar'},[elTempBar])
 						])
 					])
 				])
@@ -340,6 +341,13 @@ return view.extend({
 				/* Temperature */
 				var tc=tRaw?Math.round(parseInt(tRaw)/1000):null;
 				elTemp.textContent=tc!==null?tc+' °C':'N/A';
+				if(tc!==null){
+					var tp=Math.min(100,Math.max(0,Math.round((tc/100)*100)));
+					elTempBar.style.width=tp+'%';
+					if(tc>75)elTempBar.style.background='#ff3b30';
+					else if(tc>55)elTempBar.style.background='#ff9500';
+					else elTempBar.style.background='#34c759';
+				}
 
 				/* Network speed */
 				var curStats=parseNetDev(ndText);
