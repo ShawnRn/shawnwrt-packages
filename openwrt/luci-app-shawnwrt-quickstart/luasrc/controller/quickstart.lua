@@ -8,14 +8,7 @@ module("luci.controller.quickstart", package.seeall)
 local function json_response(result, success, extra)
 	local payload = extra or {}
 	payload.success = success or 0
-	
-	if type(result) == "table" then
-		for k, v in pairs(result) do
-			payload[k] = v
-		end
-	else
-		payload.result = result
-	end
+	payload.result = result
 
 	http.prepare_content("application/json")
 	http.write_json(payload)
@@ -23,6 +16,11 @@ end
 
 local function vue_lang()
 	local lang = i18n.translate("quickstart_vue_lang")
+	local syslang = require("luci.config").main.lang
+
+	if syslang == "zh_Hans" or syslang == "zh-cn" then
+		lang = "zh-cn"
+	end
 
 	if lang == "quickstart_vue_lang" or lang == "" then
 		lang = "zh-cn"
@@ -219,8 +217,12 @@ function api_network_status()
 end
 
 function api_device_list()
+	local d = {}
+	local h = {}
+	setmetatable(d, {__jsontype="array"})
+	setmetatable(h, {__jsontype="array"})
 	json_response({
-		devices = {},
-		hosts = {}
+		devices = d,
+		hosts = h
 	})
 end
