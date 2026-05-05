@@ -13,12 +13,20 @@ function index()
     entry({"admin", "quickstart"}, alias("admin", "index"), nil, 1)
 end
 
+function get_json_lib()
+    local ok, json = pcall(require, "luci.jsonc")
+    if ok then return json end
+    ok, json = pcall(require, "luci.json")
+    if ok then return json end
+    return nil
+end
+
 function api_system_status()
     local uci = require "luci.model.uci".cursor()
     local sys = require "luci.sys"
     local utl = require "luci.util"
     local http = require "luci.http"
-    local json = require "luci.jsonc"
+    local json = get_json_lib()
 
     local result = {
         hostname = sys.hostname(),
@@ -36,17 +44,19 @@ function api_system_status()
     if f then
         local line = f:read("*l")
         f:close()
-        local user, nice, system, idle = line:match("cpu%s+(%d+)%s+(%d+)%s+(%d+)%s+(%d+)")
-        if user then
-            local total = tonumber(user) + tonumber(nice) + tonumber(system) + tonumber(idle)
-            local busy = tonumber(user) + tonumber(nice) + tonumber(system)
-            result.cpuUsage = math.floor((busy / total) * 100)
+        if line then
+            local user, nice, system, idle = line:match("cpu%s+(%d+)%s+(%d+)%s+(%d+)%s+(%d+)")
+            if user then
+                local total = tonumber(user) + tonumber(nice) + tonumber(system) + tonumber(idle)
+                local busy = tonumber(user) + tonumber(nice) + tonumber(system)
+                result.cpuUsage = math.floor((busy / total) * 100)
+            end
         end
     end
 
     -- Memory
     local mem = sys.memory()
-    if mem.total > 0 then
+    if mem and mem.total and mem.total > 0 then
         result.memoryUsage = math.floor(((mem.total - mem.free - mem.buffered - mem.cached) / mem.total) * 100)
     end
 
@@ -57,7 +67,9 @@ function api_system_status()
     end
     if temp ~= "" then
         local t = tonumber(temp)
-        result.cpuTemperature = t > 1000 and (t / 1000) or t
+        if t then
+            result.cpuTemperature = t > 1000 and (t / 1000) or t
+        end
     end
 
     -- WAN IP
@@ -90,24 +102,37 @@ function api_system_status()
     end
 
     http.prepare_content("application/json")
-    http.write(json.encode({result = result}))
+    if json then
+        http.write(json.encode({result = result}))
+    else
+        -- Fallback to manual JSON if no lib found (very unlikely)
+        http.write('{"result":{"hostname":"' .. result.hostname .. '","uptime":' .. result.uptime .. '}}')
+    end
 end
 
 function api_check_update()
     local utl = require "luci.util"
     local http = require "luci.http"
-    local json = require "luci.jsonc"
+    local json = get_json_lib()
     local check = utl.exec("/usr/bin/shawnwrt-ota status 2>/dev/null")
     local update = (check:find("Update Available") or check:find("发现新版本")) and true or false
     http.prepare_content("application/json")
-    http.write(json.encode({update_available = update}))
+    if json then
+        http.write(json.encode({update_available = update}))
+    else
+        http.write('{"update_available":' .. (update and 'true' or 'false') .. '}')
+    end
 end
 
 function api_system_version()
     local utl = require "luci.util"
     local http = require "luci.http"
-    local json = require "luci.jsonc"
+    local json = get_json_lib()
     local version = utl.exec("cat /etc/shawnwrt_version 2>/dev/null || cat /etc/openwrt_version"):gsub("\n", "")
     http.prepare_content("application/json")
-    http.write(json.encode({version = version}))
+    if json then
+        http.write(json.encode({version = version}))
+    else
+        http.write('{"version":"' .. version .. '"}')
+    end
 end

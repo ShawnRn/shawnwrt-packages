@@ -1,173 +1,98 @@
 <%+header%>
-<div id="swrt-index-root" class="swrt-index-root">
+<div id="sw-index-main" class="sw-index-main">
     <style>
-        #swrt-index-root {
-            --sw-accent: var(--activeColor, #007aff);
-            --sw-text: var(--textColor, #1d1d1f);
-            --sw-card-bg: var(--sectionbgColor, #ffffff);
-            --sw-border: var(--borderColor, rgba(0,0,0,0.1));
+        /* Force Root Styles */
+        #sw-index-main {
+            --sw-accent: #007aff;
+            --sw-text: #1d1d1f;
+            --sw-card: #ffffff;
+            --sw-border: rgba(0,0,0,0.1);
+            --sw-bg-page: transparent;
             
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
             color: var(--sw-text) !important;
             max-width: 1200px;
             margin: 1rem auto;
             padding: 0 1rem;
             position: relative;
-            z-index: 1;
-            animation: swrt-entrance 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+            z-index: 10;
         }
 
-        /* Explicit Dark Mode Overrides to ensure readability */
-        [data-theme='dark'] #swrt-index-root, 
-        .dark #swrt-index-root {
-            --sw-text: #fefefe !important;
-            --sw-card-bg: #1c1c1e !important;
-            --sw-border: rgba(255,255,255,0.1) !important;
+        /* HARD OVERRIDE FOR DARK MODE */
+        [data-theme='dark'] #sw-index-main,
+        .dark #sw-index-main,
+        @media (prefers-color-scheme: dark) {
+            #sw-index-main {
+                --sw-text: #f5f5f7 !important;
+                --sw-card: #2c2c2e !important;
+                --sw-border: rgba(255,255,255,0.15) !important;
+            }
         }
 
-        @keyframes swrt-entrance {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Top Banner */
-        .sw-banner {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            margin-bottom: 2.5rem;
-            padding: 0 0.5rem;
-        }
-
-        .sw-title-box h1 { 
-            font-size: 2.8rem; 
-            font-weight: 800; 
-            margin: 0; 
-            letter-spacing: -0.03em;
-            color: var(--sw-text) !important;
-            border: none !important;
-            background: none !important;
-            -webkit-text-fill-color: initial !important;
-        }
-
-        .sw-status-capsule {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.6rem;
-            margin-top: 0.8rem;
-            padding: 6px 14px;
-            background: var(--badgebgColor, rgba(127,127,127,0.05)) !important;
-            border: 1px solid var(--sw-border) !important;
-            border-radius: 100px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: var(--sw-text) !important;
-        }
-        .sw-status-dot { width: 8px; height: 8px; border-radius: 50%; background: #ccc; }
-        .sw-status-capsule.online .sw-status-dot { background: var(--progressbar, #34c759); box-shadow: 0 0 10px var(--progressbar); }
-        .sw-status-capsule.offline .sw-status-dot { background: #ff3b30; }
-
-        .sw-meta-box { text-align: right; }
-        .sw-uptime { font-size: 1rem; font-weight: 500; opacity: 0.6; font-family: ui-monospace, monospace; color: var(--sw-text) !important; }
+        .sw-banner { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2.5rem; }
+        .sw-title h1 { font-size: 2.8rem; font-weight: 800; margin: 0; color: var(--sw-text) !important; border: none !important; }
         
-        .sw-ota-alert {
-            display: inline-block;
-            margin-top: 0.8rem;
-            padding: 6px 16px;
-            background: var(--sw-accent);
-            color: #fff !important;
-            border-radius: 100px;
-            font-size: 0.85rem;
-            font-weight: 700;
-            box-shadow: 0 8px 20px rgba(0,122,255,0.2);
-            cursor: pointer;
+        .sw-status {
+            display: inline-flex; align-items: center; gap: 0.6rem; margin-top: 0.8rem;
+            padding: 6px 14px; background: rgba(127,127,127,0.1); border-radius: 100px;
+            font-size: 0.9rem; font-weight: 600; color: var(--sw-text) !important;
         }
+        .sw-dot { width: 8px; height: 8px; border-radius: 50%; background: #888; }
+        .online .sw-dot { background: #34c759; box-shadow: 0 0 10px #34c759; }
+        .offline .sw-dot { background: #ff3b30; }
 
-        /* Main Grid */
-        .sw-grid {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 1.5rem;
-        }
+        .sw-uptime { font-size: 1rem; opacity: 0.6; color: var(--sw-text) !important; }
 
+        .sw-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; }
+        
         .sw-card {
-            background: var(--sw-card-bg) !important;
+            background: var(--sw-card) !important;
             border: 1px solid var(--sw-border) !important;
             border-radius: 24px;
             padding: 2rem;
-            box-shadow: var(--sectionShaddow, 0 4px 20px rgba(0,0,0,0.05)) !important;
-            transition: all 0.3s;
-            position: relative;
-            z-index: 2;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.05) !important;
             color: var(--sw-text) !important;
         }
 
-        .sw-card-title { font-size: 1.3rem; font-weight: 700; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; color: var(--sw-text) !important; }
+        .sw-card-title { font-size: 1.3rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--sw-text) !important; }
 
-        /* Chart Section */
-        .sw-chart-legend { display: flex; gap: 1.5rem; font-size: 0.9rem; font-weight: 600; }
-        .sw-legend-item { display: flex; align-items: center; gap: 0.5rem; }
-        .sw-legend-item.down { color: #007aff !important; }
-        .sw-legend-item.up { color: #5856d6 !important; }
-        .sw-legend-item strong { font-family: ui-monospace, monospace; font-size: 1rem; }
+        .sw-legend { display: flex; gap: 1.5rem; font-size: 0.9rem; font-weight: 600; }
+        .down { color: #007aff !important; }
+        .up { color: #5856d6 !important; }
+
+        .sw-chart-box { height: 260px; width: 100%; margin-top: 1rem; position: relative; }
         
-        .sw-canvas-container { height: 260px; width: 100%; margin-top: 1rem; position: relative; }
-        #sw-speed-chart { width: 100%; height: 100%; }
+        .sw-res-row { margin-bottom: 1.5rem; }
+        .sw-res-label { display: flex; justify-content: space-between; margin-bottom: 0.6rem; font-size: 0.9rem; font-weight: 600; opacity: 0.8; }
+        .sw-res-track { height: 8px; background: rgba(127,127,127,0.2); border-radius: 10px; overflow: hidden; }
+        .sw-res-fill { height: 100%; background: var(--sw-accent); transition: width 0.8s ease; }
 
-        /* Resource Items */
-        .sw-res-item { margin-bottom: 1.5rem; }
-        .sw-res-label { display: flex; justify-content: space-between; margin-bottom: 0.6rem; font-size: 0.9rem; font-weight: 600; opacity: 0.8; color: var(--sw-text) !important; }
-        .sw-res-track { height: 8px; background: rgba(127,127,127,0.15); border-radius: 10px; overflow: hidden; }
-        .sw-res-fill { height: 100%; background: var(--sw-accent); border-radius: 10px; transition: width 0.8s ease; }
+        .sw-if-row { display: flex; justify-content: space-between; padding: 1.2rem 0; border-bottom: 1px solid var(--sw-border); }
+        .sw-if-name { font-weight: 700; color: var(--sw-text) !important; }
+        .sw-if-ip { font-size: 0.85rem; opacity: 0.5; color: var(--sw-text) !important; }
 
-        /* Interface List */
-        .sw-if-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1.2rem 0;
-            border-bottom: 1px solid var(--sw-border);
-        }
-        .sw-if-info { display: flex; flex-direction: column; gap: 0.2rem; }
-        .sw-if-name { font-weight: 700; font-size: 1.1rem; color: var(--sw-text) !important; }
-        .sw-if-ip { font-size: 0.85rem; opacity: 0.6; font-family: ui-monospace, monospace; color: var(--sw-text) !important; }
-        .sw-if-speed { font-size: 0.95rem; font-weight: 600; color: var(--sw-text) !important; }
-
-        /* Action Buttons */
-        .sw-actions { display: flex; gap: 1rem; margin-top: 2rem; justify-content: center; }
+        .sw-footer { display: flex; gap: 1rem; margin-top: 2rem; justify-content: center; }
         .sw-btn {
-            background: var(--inputbgColor, rgba(127,127,127,0.1)) !important;
-            border: 1px solid var(--sw-border) !important;
-            color: var(--sw-text) !important;
-            padding: 14px 32px;
-            border-radius: 18px;
-            font-size: 1rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.2s;
+            background: rgba(127,127,127,0.1) !important; border: 1px solid var(--sw-border) !important;
+            color: var(--sw-text) !important; padding: 14px 32px; border-radius: 18px;
+            font-size: 1rem; font-weight: 700; cursor: pointer;
         }
         .sw-btn:hover { background: var(--sw-accent) !important; color: #fff !important; }
 
         .hidden { display: none !important; }
-
-        @media (max-width: 900px) {
-            .sw-grid { grid-template-columns: 1fr; }
-            .sw-banner { flex-direction: column; align-items: flex-start; }
-            .sw-meta-box { text-align: left; }
-        }
     </style>
 
     <header class="sw-banner">
-        <div class="sw-title-box">
-            <h1 id="sw-device-name">ShawnWrt</h1>
-            <div id="sw-net-status" class="sw-status-capsule offline">
-                <span class="sw-status-dot"></span>
-                <span class="sw-status-text">正在初始化...</span>
+        <div class="sw-title">
+            <h1 id="sw-dev-name">ShawnWrt</h1>
+            <div id="sw-net-status" class="sw-status offline">
+                <span class="sw-dot"></span>
+                <span class="sw-status-text">初始化中...</span>
             </div>
         </div>
-        <div class="sw-meta-box">
-            <div class="sw-uptime" id="sw-uptime">Uptime: --:--:--</div>
-            <div id="sw-ota-alert" class="sw-ota-alert hidden" onclick="location.href='<%=luci.dispatcher.build_url('admin/system/shawnwrt-ota')%>'">发现新版本</div>
+        <div class="sw-meta">
+            <div class="sw-uptime" id="sw-uptime-val">Uptime: --:--:--</div>
+            <div id="sw-ota-badge" class="sw-status hidden" style="background:var(--sw-accent); color:#fff !important; cursor:pointer;" onclick="location.href='<%=luci.dispatcher.build_url('admin/system/shawnwrt-ota')%>'">有新版本</div>
         </div>
     </header>
 
@@ -175,43 +100,43 @@
         <div class="sw-card">
             <div class="sw-card-title">
                 <span>实时流量</span>
-                <div class="sw-chart-legend">
-                    <span class="sw-legend-item down">下载 <strong id="sw-val-down">0 B/s</strong></span>
-                    <span class="sw-legend-item up">上传 <strong id="sw-val-up">0 B/s</strong></span>
+                <div class="sw-legend">
+                    <span class="down">下载 <strong id="sw-down-speed">0 B/s</strong></span>
+                    <span class="up">上传 <strong id="sw-up-speed">0 B/s</strong></span>
                 </div>
             </div>
-            <div class="sw-canvas-container">
-                <canvas id="sw-speed-chart"></canvas>
+            <div class="sw-chart-box">
+                <canvas id="sw-main-chart"></canvas>
             </div>
         </div>
 
-        <div class="sw-side-col">
-            <div class="sw-card">
+        <div class="sw-side">
+            <div class="sw-card" style="margin-bottom:1.5rem;">
                 <div class="sw-card-title">系统资源</div>
-                <div class="sw-res-item">
-                    <div class="sw-res-label"><span>CPU 负载</span><span id="sw-cpu-val">0%</span></div>
-                    <div class="sw-res-track"><div id="sw-cpu-bar" class="sw-res-fill"></div></div>
+                <div class="sw-res-row">
+                    <div class="sw-res-label"><span>CPU 负载</span><span id="sw-cpu-label">0%</span></div>
+                    <div class="sw-res-track"><div id="sw-cpu-fill" class="sw-res-fill"></div></div>
                 </div>
-                <div class="sw-res-item">
-                    <div class="sw-res-label"><span>内存占用</span><span id="sw-mem-val">0%</span></div>
-                    <div class="sw-res-track"><div id="sw-mem-bar" class="sw-res-fill"></div></div>
+                <div class="sw-res-row">
+                    <div class="sw-res-label"><span>内存占用</span><span id="sw-mem-label">0%</span></div>
+                    <div class="sw-res-track"><div id="sw-mem-fill" class="sw-res-fill"></div></div>
                 </div>
-                <div class="sw-res-item">
-                    <div class="sw-res-label"><span>核心温度</span><span id="sw-temp-val">-- °C</span></div>
+                <div class="sw-res-row">
+                    <div class="sw-res-label"><span>核心温度</span><span id="sw-temp-label">-- °C</span></div>
                 </div>
             </div>
 
             <div class="sw-card">
                 <div class="sw-card-title">网络接口</div>
-                <div id="sw-if-list"></div>
+                <div id="sw-if-list-box"></div>
             </div>
         </div>
     </main>
 
-    <footer class="sw-actions">
+    <footer class="sw-footer">
         <button class="sw-btn" onclick="location.href='<%=luci.dispatcher.build_url('admin/network/wireless')%>'">无线设置</button>
         <button class="sw-btn" onclick="location.href='<%=luci.dispatcher.build_url('admin/system/shawnwrt-ota')%>'">系统升级</button>
-        <button class="sw-btn" onclick="if(confirm('确认重启路由器？')) location.href='<%=luci.dispatcher.build_url('admin/system/reboot')%>'">重启系统</button>
+        <button class="sw-btn" onclick="if(confirm('重启路由器？')) location.href='<%=luci.dispatcher.build_url('admin/system/reboot')%>'">重启</button>
     </footer>
 
     <script src="/luci-static/resources/index/index.js?v=<%=os.time()%>"></script>
