@@ -68,61 +68,45 @@ return view.extend({
 				width: 100%;
 				margin: 0;
 				padding: 0;
-				color: #222 !important;
+				color: var(--textColor) !important;
 			}
-			.swrt-ota-header h2 { font-size: 1.8rem; font-weight: 700; margin: 0; color: #111 !important; }
-			.swrt-ota-header p { color: #666 !important; font-size: 0.95rem; margin-top: 0.3rem; }
+			.swrt-ota-header h2 { font-size: 1.8rem; font-weight: 700; margin: 0; color: var(--textColor) !important; }
+			.swrt-ota-header p { color: var(--textColor) !important; opacity: 0.6; font-size: 0.95rem; margin-top: 0.3rem; }
 
 			.swrt-ota-main-card {
-				background: #fff !important;
-				border: 1px solid rgba(0,0,0,0.1) !important;
+				background: var(--sectionbgColor) !important;
+				border: 1px solid var(--borderColor) !important;
 				border-radius: 16px;
 				padding: 2rem;
-				box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+				box-shadow: var(--sectionShaddow);
 				display: flex;
 				flex-direction: column;
 				gap: 2rem;
 			}
 
-			@media (prefers-color-scheme: dark) {
-				.swrt-ota-wrap { color: #eee !important; }
-				.swrt-ota-header h2 { color: #fff !important; }
-				.swrt-ota-header p { color: #aaa !important; }
-				.swrt-ota-main-card { background: rgba(255,255,255,0.08) !important; border-color: rgba(255,255,255,0.15) !important; }
-			}
-
-			/* Handle theme-specific dark mode if any */
-			[data-theme='dark'] .swrt-ota-wrap, .dark .swrt-ota-wrap { color: #eee !important; }
-			[data-theme='dark'] .swrt-ota-header h2, .dark .swrt-ota-header h2 { color: #fff !important; }
-			[data-theme='dark'] .swrt-ota-header p, .dark .swrt-ota-header p { color: #aaa !important; }
-			[data-theme='dark'] .swrt-ota-main-card, .dark .swrt-ota-main-card { background: rgba(255,255,255,0.08) !important; border-color: rgba(255,255,255,0.15) !important; }
-
 			.swrt-ota-status-section {
 				display: flex;
 				align-items: center;
 				gap: 1.5rem;
-				border-bottom: 1px solid rgba(0,0,0,0.05);
+				border-bottom: 1px solid var(--borderColor);
 				padding-bottom: 1.5rem;
 			}
-			@media (prefers-color-scheme: dark) { .swrt-ota-status-section { border-color: rgba(255,255,255,0.1); } }
 
 			.swrt-ota-icon-box {
 				width: 56px;
 				height: 56px;
-				background: #f5f5f7 !important;
+				background: var(--badgebgColor) !important;
 				border-radius: 12px;
 				display: flex;
 				align-items: center;
 				justify-content: center;
 				flex-shrink: 0;
 			}
-			@media (prefers-color-scheme: dark) { .swrt-ota-icon-box { background: rgba(255,255,255,0.1) !important; } }
-			.swrt-ota-icon-box svg { width: 32px; height: 32px; fill: #444 !important; }
-			@media (prefers-color-scheme: dark) { .swrt-ota-icon-box svg { fill: #fff !important; } }
+			.swrt-ota-icon-box svg { width: 32px; height: 32px; fill: var(--textColor) !important; }
 
 			.swrt-ota-status-content { flex: 1; }
-			.swrt-ota-status-title { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.2rem; color: inherit !important; }
-			.swrt-ota-status-desc { font-size: 0.9rem; color: #888 !important; }
+			.swrt-ota-status-title { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.2rem; color: var(--textColor) !important; }
+			.swrt-ota-status-desc { font-size: 0.9rem; color: var(--textColor) !important; opacity: 0.6; }
 
 			.swrt-ota-info-grid {
 				display: grid;
@@ -131,11 +115,9 @@ return view.extend({
 			}
 
 			.swrt-ota-info-item { display: flex; flex-direction: column; gap: 0.4rem; }
-			.swrt-ota-info-label { font-size: 0.85rem; color: #999 !important; text-transform: uppercase; letter-spacing: 0.5px; }
-			@media (prefers-color-scheme: dark) { .swrt-ota-info-label { color: #aaa !important; } }
-			.swrt-ota-info-value { font-size: 1rem; font-weight: 500; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; word-break: break-all; color: inherit !important; }
-			.swrt-ota-info-value.is-latest { color: #28a745 !important; font-weight: 700; }
-			@media (prefers-color-scheme: dark) { .swrt-ota-info-value.is-latest { color: #34c759 !important; } }
+			.swrt-ota-info-label { font-size: 0.85rem; color: var(--textColor) !important; opacity: 0.5; text-transform: uppercase; letter-spacing: 0.5px; }
+			.swrt-ota-info-value { font-size: 1rem; font-weight: 500; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; word-break: break-all; color: var(--textColor) !important; }
+			.swrt-ota-info-value.is-latest { color: var(--progressbar) !important; font-weight: 700; }
 
 			.swrt-ota-actions { display: flex; gap: 1rem; align-items: center; margin-top: 0.5rem; }
 
