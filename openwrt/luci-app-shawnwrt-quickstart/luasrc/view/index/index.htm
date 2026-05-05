@@ -1,16 +1,12 @@
 <%+header%>
 <div id="sw-index-main" class="sw-index-main">
     <style>
-        /* Force Root Styles */
+        /* Aurora Theme Native Integration:
+         * Uses --page-bg, --foreground, --panel-bg, --border
+         * Dark mode handled by Aurora via [data-darkmode=true]
+         */
         #sw-index-main {
-            --sw-accent: #007aff;
-            --sw-text: #1d1d1f;
-            --sw-card: #ffffff;
-            --sw-border: rgba(0,0,0,0.1);
-            --sw-bg-page: transparent;
-            
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
-            color: var(--sw-text) !important;
+            color: var(--foreground, #1d1d1f);
             max-width: 1200px;
             margin: 1rem auto;
             padding: 0 1rem;
@@ -18,43 +14,31 @@
             z-index: 10;
         }
 
-        /* HARD OVERRIDE FOR DARK MODE */
-        [data-theme='dark'] #sw-index-main,
-        .dark #sw-index-main,
-        @media (prefers-color-scheme: dark) {
-            #sw-index-main {
-                --sw-text: #f5f5f7 !important;
-                --sw-card: #2c2c2e !important;
-                --sw-border: rgba(255,255,255,0.15) !important;
-            }
-        }
-
         .sw-banner { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2.5rem; }
-        .sw-title h1 { font-size: 2.8rem; font-weight: 800; margin: 0; color: var(--sw-text) !important; border: none !important; }
+        .sw-title h1 { font-size: 2.8rem; font-weight: 800; margin: 0; color: var(--foreground, #1d1d1f); border: none !important; }
         
         .sw-status {
             display: inline-flex; align-items: center; gap: 0.6rem; margin-top: 0.8rem;
             padding: 6px 14px; background: rgba(127,127,127,0.1); border-radius: 100px;
-            font-size: 0.9rem; font-weight: 600; color: var(--sw-text) !important;
+            font-size: 0.9rem; font-weight: 600; color: var(--foreground, #1d1d1f);
         }
         .sw-dot { width: 8px; height: 8px; border-radius: 50%; background: #888; }
         .online .sw-dot { background: #34c759; box-shadow: 0 0 10px #34c759; }
         .offline .sw-dot { background: #ff3b30; }
 
-        .sw-uptime { font-size: 1rem; opacity: 0.6; color: var(--sw-text) !important; }
+        .sw-uptime { font-size: 1rem; opacity: 0.6; color: var(--foreground, #1d1d1f); }
 
         .sw-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; }
         
         .sw-card {
-            background: var(--sw-card) !important;
-            border: 1px solid var(--sw-border) !important;
+            background: var(--panel-bg, #fff);
+            border: 1px solid var(--border, rgba(0,0,0,0.1));
             border-radius: 24px;
             padding: 2rem;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.05) !important;
-            color: var(--sw-text) !important;
+            color: var(--foreground, #1d1d1f);
         }
 
-        .sw-card-title { font-size: 1.3rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--sw-text) !important; }
+        .sw-card-title { font-size: 1.3rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--foreground, #1d1d1f); }
 
         .sw-legend { display: flex; gap: 1.5rem; font-size: 0.9rem; font-weight: 600; }
         .down { color: #007aff !important; }
@@ -65,19 +49,19 @@
         .sw-res-row { margin-bottom: 1.5rem; }
         .sw-res-label { display: flex; justify-content: space-between; margin-bottom: 0.6rem; font-size: 0.9rem; font-weight: 600; opacity: 0.8; }
         .sw-res-track { height: 8px; background: rgba(127,127,127,0.2); border-radius: 10px; overflow: hidden; }
-        .sw-res-fill { height: 100%; background: var(--sw-accent); transition: width 0.8s ease; }
+        .sw-res-fill { height: 100%; background: #007aff; transition: width 0.8s ease; }
 
-        .sw-if-row { display: flex; justify-content: space-between; padding: 1.2rem 0; border-bottom: 1px solid var(--sw-border); }
-        .sw-if-name { font-weight: 700; color: var(--sw-text) !important; }
-        .sw-if-ip { font-size: 0.85rem; opacity: 0.5; color: var(--sw-text) !important; }
+        .sw-if-row { display: flex; justify-content: space-between; padding: 1.2rem 0; border-bottom: 1px solid var(--border, rgba(0,0,0,0.1)); }
+        .sw-if-name { font-weight: 700; color: var(--foreground, #1d1d1f); }
+        .sw-if-ip { font-size: 0.85rem; opacity: 0.5; color: var(--foreground, #1d1d1f); }
 
         .sw-footer { display: flex; gap: 1rem; margin-top: 2rem; justify-content: center; }
         .sw-btn {
-            background: rgba(127,127,127,0.1) !important; border: 1px solid var(--sw-border) !important;
-            color: var(--sw-text) !important; padding: 14px 32px; border-radius: 18px;
+            background: rgba(127,127,127,0.1); border: 1px solid var(--border, rgba(0,0,0,0.1));
+            color: var(--foreground, #1d1d1f); padding: 14px 32px; border-radius: 18px;
             font-size: 1rem; font-weight: 700; cursor: pointer;
         }
-        .sw-btn:hover { background: var(--sw-accent) !important; color: #fff !important; }
+        .sw-btn:hover { background: #007aff !important; color: #fff !important; }
 
         .hidden { display: none !important; }
     </style>

@@ -64,72 +64,89 @@ return view.extend({
 		var container = E('div', { 'id': 'swrt-ota-root', 'class': 'swrt-ota-wrap' });
 		
 		var style = E('style', {}, [`
+			/* ===== Aurora Theme Native Integration =====
+			 * Aurora uses [data-darkmode=true] on <html> and
+			 * CSS vars: --page-bg, --foreground, --panel-bg, --border
+			 */
 			#swrt-ota-root {
-				--ota-bg: #ffffff;
-				--ota-text: #1d1d1f;
-				--ota-border: rgba(0,0,0,0.1);
-				--ota-accent: #007aff;
-				
 				width: 100%;
 				margin: 0;
 				padding: 1rem 0;
-				color: var(--ota-text) !important;
-				font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+				color: var(--foreground, #1d1d1f);
 			}
 
-			/* DEFCON 1 DARK MODE OVERRIDE */
-			[data-theme='dark'] #swrt-ota-root,
-			.dark #swrt-ota-root,
-			@media (prefers-color-scheme: dark) {
-				#swrt-ota-root {
-					--ota-bg: #1c1c1e !important;
-					--ota-text: #f5f5f7 !important;
-					--ota-border: rgba(255,255,255,0.1) !important;
-				}
+			.swrt-ota-header h2 {
+				font-size: 1.8rem; font-weight: 800; margin: 0;
+				color: var(--foreground, #1d1d1f);
+				border: none !important;
 			}
-
-			.swrt-ota-header h2 { font-size: 1.8rem; font-weight: 800; margin: 0; color: var(--ota-text) !important; border: none !important; }
-			.swrt-ota-header p { color: var(--ota-text) !important; opacity: 0.5; font-size: 0.9rem; margin-top: 0.3rem; }
+			.swrt-ota-header p {
+				color: var(--foreground, #1d1d1f);
+				opacity: 0.5; font-size: 0.9rem; margin-top: 0.3rem;
+			}
 
 			.swrt-ota-main-card {
-				background: var(--ota-bg) !important;
-				border: 1px solid var(--ota-border) !important;
+				background: var(--panel-bg, #fff);
+				border: 1px solid var(--border, rgba(0,0,0,0.1));
 				border-radius: 20px;
 				padding: 1.8rem;
-				box-shadow: 0 10px 30px rgba(0,0,0,0.05);
 				display: flex;
 				flex-direction: column;
 				gap: 1.8rem;
 				margin-top: 1.5rem;
-				color: var(--ota-text) !important;
+				color: var(--foreground, #1d1d1f);
+			}
+
+			.swrt-ota-status-section {
+				display: flex;
+				align-items: center;
+				gap: 1.2rem;
 			}
 
 			.swrt-ota-icon-box {
 				width: 48px; height: 48px;
-				background: rgba(127,127,127,0.1) !important;
+				background: rgba(127,127,127,0.1);
 				border-radius: 14px;
 				display: flex; align-items: center; justify-content: center;
 				flex-shrink: 0;
 			}
-			.swrt-ota-icon-box svg { width: 28px; height: 28px; fill: var(--ota-text) !important; }
+			.swrt-ota-icon-box svg {
+				width: 28px; height: 28px;
+				fill: var(--foreground, #555);
+			}
 
 			.swrt-ota-status-content { flex: 1; }
-			.swrt-ota-status-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 0.2rem; color: var(--ota-text) !important; }
-			.swrt-ota-status-desc { font-size: 0.9rem; opacity: 0.5; font-family: ui-monospace, monospace; color: var(--ota-text) !important; }
+			.swrt-ota-status-title {
+				font-size: 1.25rem; font-weight: 700; margin-bottom: 0.2rem;
+				color: var(--foreground, #1d1d1f);
+			}
+			.swrt-ota-status-desc {
+				font-size: 0.9rem; opacity: 0.5;
+				font-family: ui-monospace, monospace;
+				color: var(--foreground, #1d1d1f);
+			}
 
 			.swrt-ota-info-grid {
 				display: grid;
 				grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
 				gap: 1.2rem;
 				padding: 1.5rem;
-				background: rgba(127,127,127,0.03) !important;
+				background: rgba(127,127,127,0.04);
 				border-radius: 16px;
-				border: 1px solid var(--ota-border) !important;
+				border: 1px solid var(--border, rgba(0,0,0,0.05));
 			}
 
 			.swrt-ota-info-item { display: flex; flex-direction: column; gap: 0.4rem; }
-			.swrt-ota-info-label { font-size: 0.75rem; opacity: 0.4; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; color: var(--ota-text) !important; }
-			.swrt-ota-info-value { font-size: 0.95rem; font-weight: 600; font-family: ui-monospace, monospace; word-break: break-all; color: var(--ota-text) !important; }
+			.swrt-ota-info-label {
+				font-size: 0.75rem; opacity: 0.5;
+				text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;
+				color: var(--foreground, #1d1d1f);
+			}
+			.swrt-ota-info-value {
+				font-size: 0.95rem; font-weight: 600;
+				font-family: ui-monospace, monospace; word-break: break-all;
+				color: var(--foreground, #1d1d1f);
+			}
 			.swrt-ota-info-value.is-latest { color: #34c759 !important; }
 
 			.swrt-ota-actions { display: flex; gap: 1.2rem; align-items: center; margin-top: 1rem; }
@@ -145,12 +162,12 @@ return view.extend({
 				cursor: pointer;
 			}
 			.swrt-ota-btn-primary:hover { background: #0062cc !important; }
-			.swrt-ota-btn-primary:disabled { background: #ccc !important; cursor: not-allowed; }
+			.swrt-ota-btn-primary:disabled { background: #888 !important; cursor: not-allowed; }
 
 			.swrt-ota-btn-secondary {
-				background: rgba(127,127,127,0.1) !important;
-				color: var(--ota-text) !important;
-				border: 1px solid var(--ota-border) !important;
+				background: rgba(127,127,127,0.1);
+				color: var(--foreground, #1d1d1f);
+				border: 1px solid var(--border, rgba(0,0,0,0.1));
 				padding: 12px 24px;
 				border-radius: 12px;
 				font-size: 0.95rem;
@@ -159,8 +176,12 @@ return view.extend({
 			}
 
 			.swrt-ota-progress-container { width: 100%; max-width: 500px; display: none; margin-top: 1rem; }
-			.swrt-ota-progress-label { display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--ota-text); opacity: 0.6; margin-bottom: 0.5rem; }
-			.swrt-ota-progress-track { height: 6px; background: rgba(127,127,127,0.1); border-radius: 10px; overflow: hidden; }
+			.swrt-ota-progress-label {
+				display: flex; justify-content: space-between;
+				font-size: 0.85rem; color: var(--foreground, #888);
+				opacity: 0.6; margin-bottom: 0.5rem;
+			}
+			.swrt-ota-progress-track { height: 6px; background: rgba(127,127,127,0.15); border-radius: 10px; overflow: hidden; }
 			.swrt-ota-progress-fill { height: 100%; background: #007aff; width: 0%; transition: width 0.3s ease; }
 		`]);
 
