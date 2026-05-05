@@ -7,9 +7,15 @@ module("luci.controller.quickstart", package.seeall)
 
 local function json_response(result, success, extra)
 	local payload = extra or {}
-
 	payload.success = success or 0
-	payload.result = result
+	
+	if type(result) == "table" then
+		for k, v in pairs(result) do
+			payload[k] = v
+		end
+	else
+		payload.result = result
+	end
 
 	http.prepare_content("application/json")
 	http.write_json(payload)
@@ -19,7 +25,7 @@ local function vue_lang()
 	local lang = i18n.translate("quickstart_vue_lang")
 
 	if lang == "quickstart_vue_lang" or lang == "" then
-		lang = "en"
+		lang = "zh-cn"
 	end
 
 	return lang
@@ -189,9 +195,26 @@ function api_check_update()
 end
 
 function api_network_status()
+	local rx = 0
+	local tx = 0
+	local f = io.open("/proc/net/dev", "r")
+	if f then
+		for line in f:lines() do
+			local name, rxb, txb = line:match("^%s*(wan[a-zA-Z0-9_.]*):%s*(%d+)%s+%d+%s+%d+%s+%d+%s+%d+%s+%d+%s+%d+%s+(%d+)")
+			if name then
+				rx = tonumber(rxb) or 0
+				tx = tonumber(txb) or 0
+				break
+			end
+		end
+		f:close()
+	end
+
 	json_response({
 		networkInfo = "netSuccess",
-		uptimeStamp = uptime_seconds()
+		uptimeStamp = uptime_seconds(),
+		rx_bytes = rx,
+		tx_bytes = tx
 	})
 end
 
