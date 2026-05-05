@@ -18,6 +18,7 @@ function api_system_status()
     local sys = require "luci.sys"
     local utl = require "luci.util"
     local http = require "luci.http"
+    local json = require "luci.jsonc"
 
     local result = {
         hostname = sys.hostname(),
@@ -30,14 +31,13 @@ function api_system_status()
         interfaces = {}
     }
 
-    -- CPU Usage via /proc/stat (Robust)
+    -- CPU Usage
     local f = io.open("/proc/stat", "r")
     if f then
         local line = f:read("*l")
         f:close()
         local user, nice, system, idle = line:match("cpu%s+(%d+)%s+(%d+)%s+(%d+)%s+(%d+)")
         if user then
-            -- We would need two samples for accurate diff, but for a quick snapshot:
             local total = tonumber(user) + tonumber(nice) + tonumber(system) + tonumber(idle)
             local busy = tonumber(user) + tonumber(nice) + tonumber(system)
             result.cpuUsage = math.floor((busy / total) * 100)
@@ -60,7 +60,7 @@ function api_system_status()
         result.cpuTemperature = t > 1000 and (t / 1000) or t
     end
 
-    -- Network / Traffic
+    -- WAN IP
     local wan_if = uci:get("network", "wan", "device") or uci:get("network", "wan", "ifname") or "eth0"
     result.wan_ip = utl.exec("ifconfig " .. wan_if .. " 2>/dev/null | grep 'inet addr' | cut -d: -f2 | awk '{print $1}'"):gsub("\n", "")
     if result.wan_ip == "" then
@@ -70,7 +70,7 @@ function api_system_status()
     result.traffic.rx_bytes = tonumber(utl.exec("cat /sys/class/net/" .. wan_if .. "/statistics/rx_bytes 2>/dev/null")) or 0
     result.traffic.tx_bytes = tonumber(utl.exec("cat /sys/class/net/" .. wan_if .. "/statistics/tx_bytes 2>/dev/null")) or 0
 
-    -- Interfaces List
+    -- Interfaces
     local ifnames = {"wan", "lan", "eap"}
     for _, n in ipairs(ifnames) do
         local dev = uci:get("network", n, "device") or uci:get("network", n, "ifname")
@@ -90,22 +90,24 @@ function api_system_status()
     end
 
     http.prepare_content("application/json")
-    http.write_json({result = result})
+    http.write(json.encode({result = result}))
 end
 
 function api_check_update()
     local utl = require "luci.util"
     local http = require "luci.http"
+    local json = require "luci.jsonc"
     local check = utl.exec("/usr/bin/shawnwrt-ota status 2>/dev/null")
     local update = (check:find("Update Available") or check:find("发现新版本")) and true or false
     http.prepare_content("application/json")
-    http.write_json({update_available = update})
+    http.write(json.encode({update_available = update}))
 end
 
 function api_system_version()
     local utl = require "luci.util"
     local http = require "luci.http"
+    local json = require "luci.jsonc"
     local version = utl.exec("cat /etc/shawnwrt_version 2>/dev/null || cat /etc/openwrt_version"):gsub("\n", "")
     http.prepare_content("application/json")
-    http.write_json({version = version})
+    http.write(json.encode({version = version}))
 end
