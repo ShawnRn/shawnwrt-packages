@@ -61,6 +61,19 @@ return view.extend({
 				bgColor = 'rgba(0,122,255,0.1)';
 				icon = '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line>';
 				title = zh ? '发现新版本' : 'Update Available';
+			} else if (info.STATE === 'need_check') {
+				color = '#8e8e93';
+				bgColor = 'rgba(142,142,147,0.1)';
+				icon = '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>';
+				title = zh ? '尚未检查更新' : 'Never checked';
+				
+				// Auto-trigger check on first load
+				if (!this._autoChecked) {
+					this._autoChecked = true;
+					runOta(['start', 'check']).then(function() {
+						setTimeout(function() { location.reload(); }, 3000);
+					});
+				}
 			} else {
 				color = '#ff9500';
 				bgColor = 'rgba(255,149,0,0.1)';
