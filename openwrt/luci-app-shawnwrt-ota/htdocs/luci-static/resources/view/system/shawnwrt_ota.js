@@ -70,9 +70,11 @@ return view.extend({
 			
 			var sizeStr = info.SIZE ? (parseInt(info.SIZE) / 1048576).toFixed(1) + ' MB' : '---';
 			
-			var iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="' + color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="background:transparent;overflow:visible;border:none;outline:none">' + icon + '</svg>';
-			var iconNode = E('div', { 'style': 'width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:' + bgColor + ';overflow:hidden;' });
-			iconNode.innerHTML = iconSvg;
+			var iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + icon + '</svg>';
+			var iconNode = E('div', { 'style': 'width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:' + bgColor + ';' });
+			iconNode.style.webkitMask = 'url("data:image/svg+xml,' + encodeURIComponent(iconSvg) + '") center/contain no-repeat';
+			iconNode.style.mask = 'url("data:image/svg+xml,' + encodeURIComponent(iconSvg) + '") center/contain no-repeat';
+			iconNode.style.backgroundColor = color;
 			
 			var node = E('div', { 'class': 'cbi-section-descr' }, [
 				E('div', { 'style': 'display:flex;align-items:center;gap:1rem;margin-bottom:1rem' }, [
