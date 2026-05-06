@@ -206,6 +206,10 @@ mkdir -p "${luci_data}/www/luci-static/resources/view/system"
 install -m 0644 \
 	"${repo_root}/openwrt/luci-app-shawnwrt-ota/htdocs/luci-static/resources/view/system/shawnwrt_ota.js" \
 	"${luci_data}/www/luci-static/resources/view/system/shawnwrt_ota.js"
+mkdir -p "${luci_data}/usr/lib/lua/luci/controller"
+install -m 0644 \
+	"${repo_root}/openwrt/luci-app-shawnwrt-ota/luasrc/controller/shawnwrt_ota.lua" \
+	"${luci_data}/usr/lib/lua/luci/controller/shawnwrt_ota.lua"
 build_ipk "luci-app-shawnwrt-ota" "${luci_version}" "${luci_release}" \
 	"shawnwrt-ota, luci-base" \
 	"LuCI support for ShawnWrt OTA" "${luci_data}"
@@ -241,6 +245,10 @@ install -m 0644 \
 	"${repo_root}/openwrt/luci-app-shawnwrt-index/htdocs/luci-static/resources/view/index/home.js" \
 	"${index_data}/www/luci-static/resources/view/index/home.js"
 
+mkdir -p "${index_data}/usr/lib/lua/luci/controller"
+install -m 0644 \
+	"${repo_root}/openwrt/luci-app-shawnwrt-index/luasrc/controller/index.lua" \
+	"${index_data}/usr/lib/lua/luci/controller/index.lua"
 build_ipk "luci-app-shawnwrt-index" "${index_version}" "${index_release}" \
 	"luci-base" \
 	"ShawnWrt Index homepage" "${index_data}"
