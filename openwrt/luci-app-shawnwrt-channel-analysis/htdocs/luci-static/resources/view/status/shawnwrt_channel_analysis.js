@@ -479,9 +479,14 @@ return view.extend({
 			});
 		}
 
-		function applySuggestedChannel(radio, suggested) {
+		function applySuggestedChannel(radio, suggested, ev) {
+			if (ev && ev.target) {
+				ev.target.disabled = true;
+				ev.target.classList.add('spinning');
+			}
 			uci.set('wireless', radio.sid, 'channel', String(suggested));
-			ui.changes.init();
+			return uci.save()
+				.then(L.bind(ui.changes.apply, ui.changes));
 		}
 
 		function summaryCard(radio) {
@@ -495,8 +500,8 @@ return view.extend({
 
 				var btnAttrs = {
 					'class': 'btn cbi-button cbi-button-action shawnwrt-channel-apply',
-					'click': function() {
-						return applySuggestedChannel(radio, suggested);
+					'click': function(ev) {
+						return applySuggestedChannel(radio, suggested, ev);
 					}
 				};
 				
