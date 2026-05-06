@@ -3,19 +3,24 @@
 		"description": "Grant access to ShawnWrt OTA actions",
 		"read": {
 			"ubus": {
-				"file": [ "exec" ]
+				"file": [ "exec" ],
+				"uci": [ "get" ]
 			},
 			"file": {
 				"/usr/bin/shawnwrt-ota": [ "exec" ]
-			}
+			},
+			"uci": [ "shawnwrt_ota" ]
 		},
 		"write": {
 			"ubus": {
-				"file": [ "exec" ]
+				"file": [ "exec" ],
+				"uci": [ "set", "add", "changes", "apply", "confirm" ]
 			},
 			"file": {
-				"/usr/bin/shawnwrt-ota": [ "exec" ]
-			}
+				"/usr/bin/shawnwrt-ota": [ "exec" ],
+				"/etc/init.d/shawnwrt-ota-cron": [ "exec" ]
+			},
+			"uci": [ "shawnwrt_ota" ]
 		}
 	}
 }

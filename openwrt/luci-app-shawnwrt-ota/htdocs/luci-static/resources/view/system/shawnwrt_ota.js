@@ -1,41 +1,16 @@
 'use strict';
 'require view';
+'require uci';
 'require fs';
 'require ui';
 
 var zh = (document.documentElement.getAttribute('lang') || navigator.language || '').toLowerCase().indexOf('zh') === 0;
 
-var L = {
-	title: zh ? '在线升级' : _('Online Upgrade'),
-	subtitle: zh ? '管理 ShawnWrt 系统版本并保持更新。' : _('Manage ShawnWrt system versions and keep updated.'),
-	checking: zh ? '正在检查更新...' : _('Checking...'),
-	upToDate: zh ? '当前已是最新版本' : _('System is up to date'),
-	updateAvailable: zh ? '发现新版本' : _('Update Available'),
-	versionInfo: zh ? '版本信息' : _('Version Info'),
-	installedVersion: zh ? '当前固件版本' : _('Installed Version'),
-	latestVersion: zh ? '云端最新版本' : _('Latest Release'),
-	boardInfo: zh ? '设备目标' : _('Board'),
-	fileSize: zh ? '文件大小' : _('Size'),
-	sha256: 'SHA256',
-	checkedAt: zh ? '上次检查' : _('Last checked'),
-	downloadAndInstall: zh ? '立即下载并安装' : _('Download & Install'),
-	checkNow: zh ? '立即检查更新' : _('Check for Updates'),
-	installing: zh ? '正在执行更新' : _('Updating'),
-	downloading: zh ? '正在下载固件' : _('Downloading'),
-	verifying: zh ? '正在验证固件' : _('Verifying'),
-	rebooting: zh ? '准备重启' : _('Rebooting'),
-	error: zh ? '更新失败' : _('Failed'),
-	log: zh ? '执行日志' : _('Execution Log'),
-	close: zh ? '关闭' : _('Close'),
-	needCheck: zh ? '未获取到云端信息' : _('No Info'),
-	rebootWarning: zh ? '更新过程中网络会短暂中断，完成后路由器将自动重启。建议在更新前备份配置。' : _('Network will disconnect briefly. The router will reboot automatically. Backup is recommended.')
-};
-
 function runOta(args) {
 	return fs.exec('/usr/bin/shawnwrt-ota', args).then(function(res) {
-		return { ok: true, stdout: (res.stdout || '').trim(), stderr: (res.stderr || '').trim(), code: res.code };
-	}).catch(function(err) {
-		return { ok: false, stdout: (err.stdout || '').trim(), stderr: (err.stderr || err.message || '').trim(), code: err.code };
+		return { ok: true, stdout: (res.stdout || '').trim() };
+	}).catch(function() {
+		return { ok: false, stdout: '' };
 	});
 }
 
@@ -50,370 +25,197 @@ function parseInfo(text) {
 
 return view.extend({
 	load: function() {
+		var self = this;
 		return Promise.all([
 			runOta(['board']),
 			runOta(['status']),
-			runOta(['job-status'])
-		]);
+			uci.load('shawnwrt_ota')
+		]).then(function(results) {
+			self._boardId = (results[0].stdout || '').trim();
+			self._statusInfo = parseInfo(results[1].stdout);
+			return self;
+		});
 	},
 
-	render: function(data) {
+	render: function() {
 		var self = this;
-		var boardId = data[0].stdout || 'unknown';
-		var statusInfo = parseInfo(data[1].stdout);
-		var jobInfo = parseInfo(data[2].stdout);
+		var info = self._statusInfo;
+		var boardId = self._boardId;
+		var enabled = uci.get('shawnwrt_ota', 'auto', 'enabled') === '1';
+		var startHour = parseInt(uci.get('shawnwrt_ota', 'auto', 'start_hour') || '1');
+		var endHour = parseInt(uci.get('shawnwrt_ota', 'auto', 'end_hour') || '3');
 		
-		var container = E('div', { 'id': 'swrt-ota-root', 'class': 'swrt-ota-wrap' });
+		var color, bgColor, icon, title;
+		if (info.STATE === 'current') {
+			color = '#34c759';
+			bgColor = 'rgba(52,199,89,0.1)';
+			icon = '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline>';
+			title = zh ? '当前已是最新版本' : 'System is up to date';
+		} else if (info.STATE === 'update') {
+			color = '#007aff';
+			bgColor = 'rgba(0,122,255,0.1)';
+			icon = '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line>';
+			title = zh ? '发现新版本' : 'Update Available';
+		} else {
+			color = '#ff9500';
+			bgColor = 'rgba(255,149,0,0.1)';
+			icon = '<circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>';
+			title = zh ? '正在检查更新...' : 'Checking...';
+		}
 		
-		var style = E('style', {}, [`
-			/* ===== Aurora Theme Native Integration =====
-			 * Aurora uses [data-darkmode=true] on <html> and
-			 * CSS vars: --page-bg, --foreground, --panel-bg, --border
-			 */
-			#swrt-ota-root {
-				width: 100%;
-				margin: 0;
-				padding: 1rem 0;
-				color: var(--foreground, #1d1d1f);
-			}
-
-			.swrt-ota-header h2 {
-				font-size: 1.8rem; font-weight: 800; margin: 0;
-				color: var(--foreground, #1d1d1f);
-				border: none !important;
-			}
-			.swrt-ota-header p {
-				color: var(--foreground, #1d1d1f);
-				opacity: 0.5; font-size: 0.9rem; margin-top: 0.3rem;
-			}
-
-			.swrt-ota-main-card {
-				background: var(--panel-bg, #fff);
-				border: 1px solid var(--border, rgba(0,0,0,0.1));
-				border-radius: 20px;
-				padding: 1.8rem;
-				display: flex;
-				flex-direction: column;
-				gap: 1.8rem;
-				margin-top: 1.5rem;
-				color: var(--foreground, #1d1d1f);
-			}
-
-			.swrt-ota-status-section {
-				display: flex;
-				align-items: center;
-				gap: 1.2rem;
-			}
-
-			.swrt-ota-icon-box {
-				width: 48px; height: 48px;
-				background: rgba(127,127,127,0.1);
-				border-radius: 14px;
-				display: flex; align-items: center; justify-content: center;
-				flex-shrink: 0;
-			}
-			.swrt-ota-icon-box svg {
-				width: 28px; height: 28px;
-				fill: var(--foreground, #555);
-			}
-
-			.swrt-ota-status-content { flex: 1; }
-			.swrt-ota-status-title {
-				font-size: 1.25rem; font-weight: 700; margin-bottom: 0.2rem;
-				color: var(--foreground, #1d1d1f);
-			}
-			.swrt-ota-status-desc {
-				font-size: 0.9rem; opacity: 0.5;
-				font-family: ui-monospace, monospace;
-				color: var(--foreground, #1d1d1f);
-			}
-
-			.swrt-ota-info-grid {
-				display: grid;
-				grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-				gap: 1.2rem;
-				padding: 1.5rem;
-				background: rgba(127,127,127,0.04);
-				border-radius: 16px;
-				border: 1px solid var(--border, rgba(0,0,0,0.05));
-			}
-
-			.swrt-ota-info-item { display: flex; flex-direction: column; gap: 0.4rem; }
-			.swrt-ota-info-label {
-				font-size: 0.75rem; opacity: 0.5;
-				text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;
-				color: var(--foreground, #1d1d1f);
-			}
-			.swrt-ota-info-value {
-				font-size: 0.95rem; font-weight: 600;
-				font-family: ui-monospace, monospace; word-break: break-all;
-				color: var(--foreground, #1d1d1f);
-			}
-			.swrt-ota-info-value.is-latest { color: #34c759 !important; }
-
-			.swrt-ota-actions { display: flex; gap: 1.2rem; align-items: center; margin-top: 1rem; }
-
-			.swrt-ota-btn-primary {
-				background: #007aff !important;
-				color: #ffffff !important;
-				border: none !important;
-				padding: 12px 28px;
-				border-radius: 12px;
-				font-size: 0.95rem;
-				font-weight: 700;
-				cursor: pointer;
-			}
-			.swrt-ota-btn-primary:hover { background: #0062cc !important; }
-			.swrt-ota-btn-primary:disabled { background: #888 !important; cursor: not-allowed; }
-
-			.swrt-ota-btn-secondary {
-				background: rgba(127,127,127,0.1);
-				color: var(--foreground, #1d1d1f);
-				border: 1px solid var(--border, rgba(0,0,0,0.1));
-				padding: 12px 24px;
-				border-radius: 12px;
-				font-size: 0.95rem;
-				font-weight: 600;
-				cursor: pointer;
-			}
-
-			.swrt-ota-progress-container { width: 100%; max-width: 500px; display: none; margin-top: 1rem; }
-			.swrt-ota-progress-label {
-				display: flex; justify-content: space-between;
-				font-size: 0.85rem; color: var(--foreground, #888);
-				opacity: 0.6; margin-bottom: 0.5rem;
-			}
-			.swrt-ota-progress-track { height: 6px; background: rgba(127,127,127,0.15); border-radius: 10px; overflow: hidden; }
-			.swrt-ota-progress-fill { height: 100%; background: #007aff; width: 0%; transition: width 0.3s ease; }
-			@keyframes swrt-ota-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-			.swrt-ota-spin { animation: swrt-ota-spin 1s linear infinite; }
-			.swrt-ota-btn-with-icon { display: inline-flex; align-items: center; gap: 8px; }
-		`]);
-
-		var iconCheck = '<svg viewBox="0 0 24 24"><path d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"/></svg>';
-		var iconUpdate = '<svg viewBox="0 0 24 24"><path d="M12,18A6,6 0 0,1 6,12C6,11 6.25,10.03 6.7,9.2L5.24,7.74C4.46,8.97 4,10.43 4,12A8,8 0 0,0 12,20V23L16,19L12,15V18M12,4V1L8,5L12,9V6A6,6 0 0,1 18,12C18,13 17.75,13.97 17.3,14.8L18.76,16.26C19.54,15.03 20,13.57 20,12A8,8 0 0,0 12,4Z"/></svg>';
-		var iconWait = '<svg viewBox="0 0 24 24"><path d="M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"/></svg>';
-		var iconSpinner = '<svg class="swrt-ota-spin" viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z"/></svg>';
-
-		var statusTitle = E('div', { 'class': 'swrt-ota-status-title' }, [L.checking]);
-		var statusDesc = E('div', { 'class': 'swrt-ota-status-desc' }, ['---']);
-		var iconBox = E('div', { 'class': 'swrt-ota-icon-box' }, [E('div', { 'innerHTML': iconWait })]);
-
-		function infoItem(label, value, isLatest) {
-			return E('div', { 'class': 'swrt-ota-info-item' }, [
-				E('div', { 'class': 'swrt-ota-info-label' }, [label]),
-				E('div', { 'class': 'swrt-ota-info-value' + (isLatest ? ' is-latest' : '') }, [value || '---'])
-			]);
+		var sizeStr = info.SIZE ? (parseInt(info.SIZE) / 1048576).toFixed(1) + ' MB' : '---';
+		
+		var startOptions = '';
+		var endOptions = '';
+		for (var h = 0; h < 24; h++) {
+			var label = (h < 10 ? '0' : '') + h + ':00';
+			startOptions += '<option value="' + h + '"' + (h === startHour ? ' selected' : '') + '>' + label + '</option>';
+			endOptions += '<option value="' + h + '"' + (h === endHour ? ' selected' : '') + '>' + label + '</option>';
 		}
-
-		var grid = E('div', { 'class': 'swrt-ota-info-grid' }, [
-			infoItem(L.installedVersion, statusInfo.INSTALLED_TAG),
-			infoItem(L.latestVersion, statusInfo.CLOUD_TAG),
-			infoItem(L.boardInfo, boardId),
-			infoItem(L.fileSize, statusInfo.SIZE ? (statusInfo.SIZE / 1048576).toFixed(1) + ' MB' : '---'),
-			infoItem(L.sha256, (statusInfo.DIGEST || '').replace('sha256:', '')),
-			infoItem(L.checkedAt, statusInfo.CHECKED_AT)
-		]);
-
-		var progressContainer = E('div', { 'class': 'swrt-ota-progress-container' }, [
-			E('div', { 'class': 'swrt-ota-progress-label' }, [
-				E('span', { 'id': 'swrt-ota-prog-task' }, [L.downloading]),
-				E('span', { 'id': 'swrt-ota-prog-pct' }, ['0%'])
-			]),
-			E('div', { 'class': 'swrt-ota-progress-track' }, [
-				E('div', { 'class': 'swrt-ota-progress-fill' })
-			])
-		]);
-
-		var actionBtn = E('button', { 'class': 'swrt-ota-btn-primary', 'disabled': 'true' }, [L.checking]);
-		var logBtn = E('button', { 'class': 'swrt-ota-btn-secondary', 'click': showLog }, [L.log]);
-
-		var mainCard = E('div', { 'class': 'swrt-ota-main-card' }, [
-			E('div', { 'class': 'swrt-ota-status-section' }, [
-				iconBox,
-				E('div', { 'class': 'swrt-ota-status-content' }, [
-					statusTitle,
-					statusDesc
-				])
-			]),
-			grid,
-			E('div', { 'class': 'swrt-ota-actions-row' }, [
-				E('div', { 'class': 'swrt-ota-actions' }, [
-					actionBtn,
-					logBtn
-				]),
-				progressContainer
-			])
-		]);
-
-		container.append(style,
-			E('div', { 'class': 'swrt-ota-header' }, [
-				E('h2', [L.title]),
-				E('p', [L.subtitle])
-			]),
-			mainCard
-		);
-
-		function updateUI(info) {
-			var state = info.STATE;
-			grid.children[0].lastChild.textContent = info.INSTALLED_TAG || '---';
-			grid.children[1].lastChild.textContent = info.CLOUD_TAG || '---';
-			grid.children[3].lastChild.textContent = info.SIZE ? (info.SIZE / 1048576).toFixed(1) + ' MB' : '---';
-			grid.children[4].lastChild.textContent = (info.DIGEST || '').replace('sha256:', '');
-			grid.children[5].lastChild.textContent = info.CHECKED_AT || '---';
-			
-			if (state === 'current') {
-				statusTitle.textContent = L.upToDate;
-				statusDesc.textContent = info.CLOUD_TAG;
-				iconBox.innerHTML = iconCheck;
-				actionBtn.textContent = L.checkNow;
-				actionBtn.disabled = false;
-				actionBtn.onclick = function() { startCheck(); };
-			} else if (state === 'update') {
-				statusTitle.textContent = L.updateAvailable;
-				statusDesc.textContent = info.CLOUD_TAG;
-				grid.children[1].lastChild.classList.add('is-latest');
-				iconBox.innerHTML = iconUpdate;
-				actionBtn.textContent = L.downloadAndInstall;
-				actionBtn.disabled = false;
-				actionBtn.onclick = function() { confirmInstall(); };
-			} else if (state === 'need_check') {
-				statusTitle.textContent = L.needCheck;
-				statusDesc.textContent = L.checkNow;
-				actionBtn.textContent = L.checkNow;
-				actionBtn.disabled = false;
-				actionBtn.onclick = function() { startCheck(); };
-			} else if (state === 'pending') {
-				statusTitle.textContent = L.rebooting;
-				actionBtn.style.display = 'none';
-			}
-		}
-
-		function startCheck() {
-			if (actionBtn.disabled) return;
-			actionBtn.disabled = true;
-			actionBtn.innerHTML = '<span class="swrt-ota-btn-with-icon">' + iconSpinner + L.checking + '</span>';
-			statusTitle.textContent = L.checking;
-			statusDesc.textContent = '';
-			runOta(['start', 'check']).then(function() {
-				pollJob();
-			}).catch(function(err) {
-				actionBtn.disabled = false;
-				actionBtn.textContent = L.checkNow;
-				statusTitle.textContent = L.error;
-				statusDesc.textContent = err.message || 'Network error';
-				ui.addNotification(null, E('p', [L.error + ': ' + (err.message || 'Unknown error')]), 'danger');
-			});
-		}
-
-		function confirmInstall() {
-			ui.showModal(L.downloadAndInstall, [
-				E('p', [L.rebootWarning]),
-				E('div', { 'class': 'right' }, [
-					E('button', { 'class': 'btn', 'click': ui.hideModal }, [L.close]),
-					' ',
-					E('button', { 'class': 'btn cbi-button-negative', 'click': function() {
-						ui.hideModal();
-						startInstall();
-					}}, [L.downloadAndInstall])
-				])
-			]);
-		}
-
-		function startInstall() {
-			if (actionBtn.disabled) return;
-			actionBtn.disabled = true;
-			actionBtn.style.display = 'none';
-			progressContainer.style.display = 'block';
-			statusTitle.textContent = L.downloading;
-			runOta(['start', 'all']).then(function() {
-				pollJob();
-			});
-		}
-
-		function pollJob() {
-			runOta(['job-status']).then(function(res) {
-				var job = parseInfo(res.stdout);
-				var running = job.JOB_RUNNING === '1';
-				var cmd = job.JOB_COMMAND;
-				var progress = parseInt(job.JOB_PROGRESS || '0');
-				var exitCode = job.JOB_EXIT;
-
-				if (running) {
-					if (cmd === 'all' || cmd === 'download') {
-						if (progress > 0 && progress < 100) {
-							statusTitle.textContent = L.downloading + ' (' + progress + '%)';
-							document.getElementById('swrt-ota-prog-task').textContent = L.downloading;
-						} else if (progress === 100) {
-							statusTitle.textContent = L.verifying;
-							document.getElementById('swrt-ota-prog-task').textContent = L.verifying;
-						}
-						progressContainer.querySelector('.swrt-ota-progress-fill').style.width = progress + '%';
-						document.getElementById('swrt-ota-prog-pct').textContent = progress + '%';
-					} else if (cmd === 'check') {
-						statusTitle.textContent = L.checking;
-						actionBtn.innerHTML = '<span class="swrt-ota-btn-with-icon">' + iconSpinner + L.checking + '</span>';
-					}
-					
-					if (res.stdout.indexOf('ACTION=test_ok') !== -1) {
-						statusTitle.textContent = L.rebooting;
-					}
-
-					setTimeout(pollJob, 1500);
-				} else {
-					if (exitCode === '0' || exitCode === '') {
-						runOta(['status']).then(function(s) {
-							var info = parseInfo(s.stdout);
-							updateUI(info);
-							progressContainer.style.display = 'none';
-							actionBtn.style.display = 'block';
-						});
-					} else {
-						statusTitle.textContent = L.error;
-						statusTitle.style.color = '#ff3b30';
-						actionBtn.disabled = false;
-						actionBtn.textContent = L.checkNow;
-						actionBtn.style.display = 'block';
-						progressContainer.style.display = 'none';
-						ui.addNotification(null, E('p', [L.error + ' (Code ' + exitCode + ')']), 'danger');
-					}
-				}
-			});
-		}
-
-		function showLog() {
-			runOta(['job-status']).then(function(res) {
-				ui.showModal(L.log, [
-					E('pre', { 'style': 'max-height:400px; overflow:auto; font-size:12px; font-family:monospace; background:rgba(0,0,0,0.05); padding:1rem; border-radius:8px;' }, [res.stdout]),
-					E('div', { 'class': 'right', 'style': 'margin-top:1rem' }, [
-						E('button', { 'class': 'btn', 'click': ui.hideModal }, [L.close])
+		
+		var installBtnHtml = info.STATE === 'update' 
+			? '<button id="ota-install" class="btn cbi-button-action" style="background:#007aff;color:#fff">' + (zh ? '下载并安装' : 'Download & Install') + '</button>' 
+			: '';
+		
+		var html = 
+			'<div class="cbi-map">' +
+				'<div class="cbi-section">' +
+					'<div class="cbi-section-descr">' +
+						'<div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem">' +
+							'<div style="width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:' + bgColor + '">' +
+								'<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="' + color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + icon + '</svg>' +
+							'</div>' +
+							'<div>' +
+								'<div style="font-size:1.1rem;font-weight:600;margin-bottom:0.2rem">' + title + '</div>' +
+								'<div style="font-size:0.85rem;opacity:0.6;font-family:ui-monospace">' + (info.CLOUD_TAG || info.INSTALLED_TAG || '---') + '</div>' +
+							'</div>' +
+						'</div>' +
+						'<table style="width:100%;border-collapse:collapse;margin-top:1rem">' +
+							'<tbody>' +
+								'<tr><td style="padding:0.5rem 0.8rem;border-bottom:1px solid rgba(0,0,0,0.06);font-size:0.8rem;opacity:0.5;width:40%">' + (zh ? '当前版本' : 'Current Version') + '</td><td style="padding:0.5rem 0.8rem;border-bottom:1px solid rgba(0,0,0,0.06);font-size:0.85rem;font-family:ui-monospace">' + (info.INSTALLED_TAG || '---') + '</td></tr>' +
+								'<tr><td style="padding:0.5rem 0.8rem;border-bottom:1px solid rgba(0,0,0,0.06);font-size:0.8rem;opacity:0.5">' + (zh ? '云端版本' : 'Cloud Version') + '</td><td style="padding:0.5rem 0.8rem;border-bottom:1px solid rgba(0,0,0,0.06);font-size:0.85rem;font-family:ui-monospace">' + (info.CLOUD_TAG || '---') + '</td></tr>' +
+								'<tr><td style="padding:0.5rem 0.8rem;border-bottom:1px solid rgba(0,0,0,0.06);font-size:0.8rem;opacity:0.5">' + (zh ? '设备目标' : 'Device Target') + '</td><td style="padding:0.5rem 0.8rem;border-bottom:1px solid rgba(0,0,0,0.06);font-size:0.85rem;font-family:ui-monospace">' + boardId + '</td></tr>' +
+								'<tr><td style="padding:0.5rem 0.8rem;font-size:0.8rem;opacity:0.5">' + (zh ? '文件大小' : 'File Size') + '</td><td style="padding:0.5rem 0.8rem;font-size:0.85rem;font-family:ui-monospace">' + sizeStr + '</td></tr>' +
+							'</tbody>' +
+						'</table>' +
+					'</div>' +
+					'<div style="display:flex;gap:0.5rem;margin-top:1rem">' +
+						installBtnHtml +
+						'<button id="ota-check" class="btn cbi-button-action">' + (zh ? '检查更新' : 'Check for Updates') + '</button>' +
+						'<button id="ota-log" class="btn cbi-button-action">' + (zh ? '执行日志' : 'Execution Log') + '</button>' +
+					'</div>' +
+				'</div>' +
+				'<div class="cbi-section">' +
+					'<h3 class="cbi-section-title">' + (zh ? '自动更新' : 'Auto Update') + '</h3>' +
+					'<div class="cbi-section-node">' +
+						'<div class="cbi-value">' +
+							'<label class="cbi-value-title">' + (zh ? '启用' : 'Enable') + '</label>' +
+							'<div class="cbi-value-field">' +
+								'<input type="checkbox" name="auto.enabled" value="1"' + (enabled ? ' checked' : '') + '>' +
+							'</div>' +
+						'</div>' +
+					'</div>' +
+					'<div class="cbi-section-node">' +
+						'<div class="cbi-value">' +
+							'<label class="cbi-value-title">' + (zh ? '开始时间' : 'Start Time') + '</label>' +
+							'<div class="cbi-value-field">' +
+								'<select name="auto.start_hour" class="cbi-input-select">' + startOptions + '</select>' +
+							'</div>' +
+						'</div>' +
+					'</div>' +
+					'<div class="cbi-section-node">' +
+						'<div class="cbi-value">' +
+							'<label class="cbi-value-title">' + (zh ? '结束时间' : 'End Time') + '</label>' +
+							'<div class="cbi-value-field">' +
+								'<select name="auto.end_hour" class="cbi-input-select">' + endOptions + '</select>' +
+							'</div>' +
+						'</div>' +
+					'</div>' +
+					'<p class="cbi-section-descr" style="font-size:0.75rem;opacity:0.5">' + (zh ? '路由器将在设定时间段内自动检查更新并安装' : 'Router will check and install updates during the scheduled time window') + '</p>' +
+				'</div>' +
+			'</div>';
+		
+		var container = document.createElement('div');
+		container.innerHTML = html;
+		
+		var installBtn = container.querySelector('#ota-install');
+		var checkBtn = container.querySelector('#ota-check');
+		var logBtn = container.querySelector('#ota-log');
+		
+		if (installBtn) {
+			installBtn.addEventListener('click', function() {
+				ui.showModal(zh ? '下载并安装' : 'Download & Install', [
+					E('p', [zh ? '更新过程中网络会短暂中断，完成后路由器将自动重启。建议在更新前备份配置。' : 'Network will disconnect briefly. The router will reboot automatically. Backup is recommended.']),
+					E('div', { 'class': 'right' }, [
+						E('button', { 'class': 'btn', 'click': ui.hideModal }, [zh ? '关闭' : 'Close']),
+						' ',
+						E('button', { 'class': 'btn cbi-button-negative', 'click': function() {
+							ui.hideModal();
+							installBtn.disabled = true;
+							runOta(['start', 'all']);
+						}}, [zh ? '确认' : 'Confirm'])
 					])
 				]);
 			});
 		}
-
-		if (jobInfo.JOB_RUNNING === '1') {
-			var cmd = jobInfo.JOB_COMMAND;
-			if (cmd === 'all' || cmd === 'download' || cmd === 'install' || cmd === 'test') {
-				actionBtn.style.display = 'none';
-				progressContainer.style.display = 'block';
-			} else if (cmd === 'check') {
-				actionBtn.disabled = true;
-				actionBtn.innerHTML = '<span class="swrt-ota-btn-with-icon">' + iconSpinner + L.checking + '</span>';
-			}
-			pollJob();
-		} else if (statusInfo.STATE === 'need_check' || !statusInfo.CLOUD_TAG) {
-			actionBtn.disabled = true;
-			actionBtn.innerHTML = '<span class="swrt-ota-btn-with-icon">' + iconSpinner + L.checking + '</span>';
-			startCheck();
-		} else {
-			updateUI(statusInfo);
-		}
-
+		
+		checkBtn.addEventListener('click', function() {
+			checkBtn.disabled = true;
+			checkBtn.textContent = zh ? '检查中...' : 'Checking...';
+			runOta(['start', 'check']).then(function() {
+				var poll = function() {
+					runOta(['job-status']).then(function(res) {
+						var job = parseInfo(res.stdout);
+						if (job.JOB_RUNNING === '1') {
+							setTimeout(poll, 1000);
+						} else {
+							location.reload();
+						}
+					});
+				};
+				poll();
+			});
+		});
+		
+		logBtn.addEventListener('click', function() {
+			runOta(['job-status']).then(function(res) {
+				ui.showModal(zh ? '执行日志' : 'Execution Log', [
+					E('pre', { 'style': 'max-height:400px;overflow:auto;font-size:12px;font-family:ui-monospace;background:rgba(0,0,0,0.04);padding:1rem;border-radius:10px;white-space:pre-wrap' }, [res.stdout]),
+					E('div', { 'class': 'right', 'style': 'margin-top:1rem' }, [
+						E('button', { 'class': 'btn', 'click': ui.hideModal }, [zh ? '关闭' : 'Close'])
+					])
+				]);
+			});
+		});
+		
 		return container;
 	},
-
-	handleSaveApply: null,
-	handleSave: null,
-	handleReset: null
+	
+	handleSaveApply: function() {
+		var enabled = document.querySelector('input[name="auto.enabled"]').checked ? '1' : '0';
+		var startHour = document.querySelector('select[name="auto.start_hour"]').value;
+		var endHour = document.querySelector('select[name="auto.end_hour"]').value;
+		
+		if (parseInt(startHour) >= parseInt(endHour)) {
+			ui.addNotification(null, E('p', [zh ? '结束时间必须大于开始时间' : 'End time must be greater than start time']), 'danger');
+			return false;
+		}
+		
+		var autoExists = uci.get('shawnwrt_ota', 'auto');
+		if (!autoExists) {
+			uci.add('shawnwrt_ota', 'ota', 'auto');
+		}
+		
+		uci.set('shawnwrt_ota', 'auto', 'enabled', enabled);
+		uci.set('shawnwrt_ota', 'auto', 'start_hour', startHour);
+		uci.set('shawnwrt_ota', 'auto', 'end_hour', endHour);
+		
+		return uci.apply().then(function() {
+			return fs.exec('/etc/init.d/shawnwrt-ota-cron', ['restart']).catch(function() {});
+		});
+	},
+	
+	handleSave: function() {
+		return this.handleSaveApply();
+	}
 });
