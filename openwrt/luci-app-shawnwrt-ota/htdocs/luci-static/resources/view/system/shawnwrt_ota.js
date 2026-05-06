@@ -30,10 +30,12 @@ return view.extend({
 		return Promise.all([
 			runOta(['board']),
 			runOta(['status']),
+			runOta(['job-status']),
 			uci.load('shawnwrt_ota')
 		]).then(function(results) {
 			self._boardId = (results[0].stdout || '').trim();
 			self._statusInfo = parseInfo(results[1].stdout);
+			self._jobInfo = parseInfo(results[2].stdout);
 			return self;
 		});
 	},
@@ -106,85 +108,33 @@ return view.extend({
 					])
 				]),
 				E('div', { 'style': 'display:flex;gap:0.5rem;margin-top:1rem' }, [
-					info.STATE === 'update' ? E('button', {
+					(info.STATE === 'update' && self._jobInfo.JOB_RUNNING !== '1') ? E('button', {
 						'class': 'btn cbi-button-action',
 						'style': 'background:#007aff;color:#fff',
 						'click': function() {
 							ui.showModal(zh ? '下载并安装' : 'Download & Install', [
 								E('p', [zh ? '更新过程中网络会短暂中断，完成后路由器将自动重启。建议在更新前备份配置。' : 'Network will disconnect briefly. The router will reboot automatically. Backup is recommended.']),
 								E('div', { 'class': 'right' }, [
-									E('button', { 'class': 'btn', 'click': ui.hideModal }, [zh ? '关闭' : 'Close']),
+									E('button', { 'class': 'btn', 'click': ui.hideModal }, [zh ? '取消' : 'Cancel']),
 									' ',
 									E('button', { 'class': 'btn cbi-button-negative', 'click': function() {
-						ui.hideModal();
-						var progressModal = ui.showModal(zh ? '正在下载并安装...' : 'Downloading & Installing...', [
-							E('div', { 'style': 'text-align:center;padding:1rem' }, [
-								E('div', { 'style': 'font-size:2rem;margin-bottom:1rem' }, ['⏳']),
-								E('div', { 'id': 'ota-progress-text', 'style': 'font-size:0.9rem;margin-bottom:0.5rem' }, [zh ? '正在启动下载...' : 'Starting download...']),
-								E('div', { 'style': 'width:100%;height:8px;background:rgba(0,0,0,0.1);border-radius:4px;overflow:hidden' }, [
-									E('div', { 'id': 'ota-progress-bar', 'style': 'width:0%;height:100%;background:#007aff;transition:width 0.3s' })
-								])
-							])
-						]);
-						runOta(['start', 'all']).then(function() {
-							var pollProgress = function() {
-								runOta(['job-status']).then(function(res) {
-									var job = parseInfo(res.stdout);
-									var progressBar = document.getElementById('ota-progress-bar');
-									var progressText = document.getElementById('ota-progress-text');
-									if (!progressBar) return;
-									
-									if (job.JOB_RUNNING === '1') {
-										var progress = parseInt(job.PROGRESS || '0');
-										var stage = job.STAGE || '';
-										progressBar.style.width = progress + '%';
-										if (stage === 'download') {
-											progressText.textContent = zh ? ('正在下载: ' + progress + '%') : ('Downloading: ' + progress + '%');
-										} else if (stage === 'install') {
-											progressText.textContent = zh ? '正在安装固件...' : 'Installing firmware...';
-											progressBar.style.width = '100%';
-										} else {
-											progressText.textContent = zh ? '正在处理...' : 'Processing...';
-										}
-										setTimeout(pollProgress, 1000);
-									} else {
-										if (job.LAST_ERROR) {
-											progressText.textContent = zh ? ('错误: ' + job.LAST_ERROR) : ('Error: ' + job.LAST_ERROR);
-											progressBar.style.background = '#ff3b30';
-											setTimeout(function() { ui.hideModal(); location.reload(); }, 3000);
-										} else {
-											progressText.textContent = zh ? '安装完成，正在重启...' : 'Installation complete, rebooting...';
-											progressBar.style.width = '100%';
-											progressBar.style.background = '#34c759';
-											setTimeout(function() { location.reload(); }, 5000);
-										}
-									}
-								});
-							};
-							setTimeout(pollProgress, 1000);
-						});
-					}}, [zh ? '确认' : 'Confirm'])
+										ui.hideModal();
+										runOta(['start', 'all']).then(function() {
+											location.reload();
+										});
+									}}, [zh ? '确认' : 'Confirm'])
 								])
 							]);
 						}
 					}, [zh ? '下载并安装' : 'Download & Install']) : '',
 					E('button', {
 						'class': 'btn cbi-button-action',
+						'disabled': (self._jobInfo.JOB_RUNNING === '1') ? 'disabled' : null,
 						'click': function(ev) {
 							ev.target.disabled = true;
 							ev.target.textContent = zh ? '检查中...' : 'Checking...';
 							runOta(['start', 'check']).then(function() {
-								var poll = function() {
-									runOta(['job-status']).then(function(res) {
-										var job = parseInfo(res.stdout);
-										if (job.JOB_RUNNING === '1') {
-											setTimeout(poll, 1000);
-										} else {
-											location.reload();
-										}
-									});
-								};
-								poll();
+								location.reload();
 							});
 						}
 					}, [zh ? '检查更新' : 'Check for Updates']),
@@ -205,6 +155,73 @@ return view.extend({
 			]);
 			return node;
 		}, this);
+
+		// Ongoing Task Section
+		if (self._jobInfo.JOB_RUNNING === '1') {
+			s = m.section(form.NamedSection, 'task', 'state', (zh ? '正在执行任务' : 'Ongoing Task'));
+			s.render = L.bind(function() {
+				var job = self._jobInfo;
+				var progress = parseInt(job.JOB_PROGRESS || '0');
+				var stage = job.JOB_COMMAND === 'check' ? (zh ? '正在检查更新...' : 'Checking...') : (zh ? '正在下载固件...' : 'Downloading...');
+				
+				if (job.JOB_COMMAND === 'all' || job.JOB_COMMAND === 'download' || job.JOB_COMMAND === 'install') {
+					var raw = job.LOG_BEGIN ? job.LOG_BEGIN : ''; // Actually it's inside the same stdout
+					// We'll poll this
+				}
+
+				var node = E('div', { 'class': 'cbi-section-descr', 'style': 'padding:1rem;background:rgba(0,122,255,0.05);border-radius:12px;border:1px solid rgba(0,122,255,0.1)' }, [
+					E('div', { 'style': 'display:flex;justify-content:space-between;align-items:center;margin-bottom:0.8rem' }, [
+						E('div', { 'style': 'display:flex;align-items:center;gap:0.6rem' }, [
+							E('span', { 'style': 'width:18px;height:18px;display:inline-block;color:#007aff' }, [
+								E('svg', { 'viewBox': '0 0 24 24', 'xmlns': 'http://www.w3.org/2000/svg', 'fill': 'none', 'stroke': 'currentColor', 'stroke-width': '3', 'stroke-linecap': 'round', 'style': 'animation: ota-spin 1s linear infinite' }, [
+									E('style', {}, ['@keyframes ota-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }']),
+									E('circle', { 'cx': '12', 'cy': '12', 'r': '10', 'style': 'opacity:0.2' }),
+									E('path', { 'd': 'M12 2 a 10 10 0 0 1 10 10' })
+								])
+							]),
+							E('span', { 'id': 'ota-task-text', 'style': 'font-weight:500;font-size:0.9rem' }, [stage])
+						]),
+						E('span', { 'id': 'ota-task-percent', 'style': 'font-family:ui-monospace;font-size:0.85rem;opacity:0.7' }, [progress + '%'])
+					]),
+					E('div', { 'style': 'width:100%;height:6px;background:rgba(0,122,255,0.1);border-radius:3px;overflow:hidden' }, [
+						E('div', { 'id': 'ota-task-bar', 'style': 'width:' + progress + '%;height:100%;background:#007aff;transition:width 0.4s cubic-bezier(0.4, 0, 0.2, 1)' })
+					])
+				]);
+
+				// Start polling loop
+				var poll = function() {
+					runOta(['job-status']).then(function(res) {
+						var j = parseInfo(res.stdout);
+						var bar = document.getElementById('ota-task-bar');
+						var txt = document.getElementById('ota-task-text');
+						var pct = document.getElementById('ota-task-percent');
+						if (!bar) return;
+
+						if (j.JOB_RUNNING === '1') {
+							var prg = parseInt(j.JOB_PROGRESS || '0');
+							bar.style.width = prg + '%';
+							pct.textContent = prg + '%';
+							
+							if (j.JOB_COMMAND === 'check') {
+								txt.textContent = zh ? '正在检查更新...' : 'Checking...';
+							} else if (prg > 0 && prg < 100) {
+								txt.textContent = zh ? ('正在下载固件: ' + prg + '%') : ('Downloading firmware: ' + prg + '%');
+							} else if (prg >= 100) {
+								txt.textContent = zh ? '正在校验并安装...' : 'Verifying and installing...';
+							} else {
+								txt.textContent = zh ? '正在准备任务...' : 'Preparing task...';
+							}
+							setTimeout(poll, 1500);
+						} else {
+							location.reload();
+						}
+					});
+				};
+				setTimeout(poll, 1500);
+
+				return node;
+			}, this);
+		}
 
 		// Auto Update Section
 		s = m.section(form.NamedSection, 'auto', 'config', (zh ? '自动更新' : 'Auto Update'));
