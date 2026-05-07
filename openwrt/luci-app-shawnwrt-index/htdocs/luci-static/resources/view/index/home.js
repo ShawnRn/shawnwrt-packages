@@ -484,10 +484,16 @@ return view.extend({
 		function devIcon(name, brand) {
 			name = (name||'').toLowerCase();
 			brand = (brand||'').toLowerCase();
-			if(name.includes('watch')||name.includes('wear')) return IC.watch;
-			if(name.includes('ipad')||name.includes('pad')||name.includes('tab')) return IC.pad;
-			if(name.includes('mac')||name.includes('pc')||name.includes('desktop')||name.includes('laptop')||name.includes('windows')||name.includes('thinkpad')) return IC.pc;
-			if(name.includes('iphone')||name.includes('phone')||brand.includes('huawei')||brand.includes('xiaomi')||brand.includes('oppo')||brand.includes('vivo')||brand.includes('samsung')||brand.includes('apple')) return IC.phone;
+			if(name.includes('watch')||name.includes('wear')||name.includes('apple watch')||name.includes('iwatch')||name.includes('gt ')||name.includes('band')) return IC.watch;
+			if(name.includes('ipad')||name.includes('pad')||name.includes('tab')||name.includes('tablet')||name.includes('matepad')||name.includes('mi pad')||name.includes('galaxy tab')) return IC.pad;
+			if(name.includes('mac')||name.includes('macbook')||name.includes('imac')||name.includes('pc')||name.includes('desktop')||name.includes('laptop')||name.includes('windows')||name.includes('thinkpad')||name.includes('surface')||name.includes('chromebook')||name.includes('linux')) return IC.pc;
+			if(name.includes('iphone')||name.includes('phone')||name.includes('pixel')||name.includes('galaxy')||name.includes('redmi')||name.includes('poco')||name.includes('oneplus')||name.includes('realme')||name.includes('honor')||name.includes('nokia')||name.includes('sony')||name.includes('asus')) return IC.phone;
+			if(brand.includes('apple')||brand.includes('iphone')) return IC.phone;
+			if(brand.includes('huawei')&&!name.includes('watch')&&!name.includes('band')) return IC.phone;
+			if((brand.includes('xiaomi')||brand.includes('redmi')||brand.includes('poco'))&&!name.includes('watch')&&!name.includes('band')&&!name.includes('pad')) return IC.phone;
+			if((brand.includes('oppo')||brand.includes('realme')||brand.includes('oneplus'))&&!name.includes('watch')&&!name.includes('band')) return IC.phone;
+			if(brand.includes('vivo')&&!name.includes('watch')&&!name.includes('band')) return IC.phone;
+			if(brand.includes('samsung')&&!name.includes('watch')&&!name.includes('gear')) return IC.phone;
 			return IC.globe;
 		}
 		function renderDevices(leases,hints,wirelessMacs){
@@ -513,6 +519,10 @@ return view.extend({
 			}
 			items.forEach(function(d){
 				var isWifi=wirelessMacs&&(wirelessMacs[d.mac]===true);
+				var isWatch = (d.name||'').toLowerCase().includes('watch')||(d.name||'').toLowerCase().includes('wear');
+				if(isWatch && !isWifi) {
+					isWifi = true;
+				}
 				var tagStyle=isWifi?'background:rgba(0,122,255,0.08);color:#007aff;':'background:rgba(88,86,214,0.08);color:#5856d6;';
 				var tagText=isWifi?'\u65e0\u7ebf':'\u6709\u7ebf';
 				var tag=E('span',{style:'font-size:0.68rem;padding:2px 5px;border-radius:4px;margin-left:6px;font-weight:600;vertical-align:middle;'+tagStyle},[tagText]);
