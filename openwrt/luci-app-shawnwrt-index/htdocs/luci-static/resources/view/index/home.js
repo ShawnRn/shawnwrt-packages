@@ -259,8 +259,8 @@ return view.extend({
 		/* ── Build DOM ── */
 		var css=E('style',{},[''+
 '#sw-home{color:var(--foreground,#1d1d1f);padding:0 0 2rem;max-width:1200px;margin:0 auto}'+
-'.sw-hdr{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;margin-bottom:1.5rem}'+
-'.sw-hname{font-size:1.8rem;font-weight:800;margin:0;color:var(--foreground,#1d1d1f);border:none!important}'+
+'.sw-hdr{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;margin-bottom:1rem;padding:1.2rem 1.4rem;background:var(--panel-bg,#fff);border:1px solid var(--border,rgba(0,0,0,.06));border-radius:14px;box-shadow:0 1px 8px rgba(0,0,0,.03)}'+
+'.sw-hname{font-size:1.4rem;font-weight:700;margin:0;color:var(--foreground,#1d1d1f);border:none!important}'+
 '.sw-hdr-right{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}'+
 '.sw-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:100px;font-size:.82rem;font-weight:600;background:rgba(127,127,127,.08);color:var(--foreground,#1d1d1f)}'+
 '.sw-pill svg{flex-shrink:0;vertical-align:middle}'+
