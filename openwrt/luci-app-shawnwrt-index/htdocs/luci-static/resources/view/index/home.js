@@ -258,7 +258,7 @@ return view.extend({
 
 		/* ── Build DOM ── */
 		var css=E('style',{},[''+
-'#sw-home{color:var(--foreground,#1d1d1f);padding:0 0 2rem;max-width:1200px;margin:0 auto}'+
+'#sw-home{color:var(--foreground,#1d1d1f);box-sizing:border-box;width:100%;max-width:1200px;min-width:0;padding:0 0 2rem;margin:0 auto}'+
 '.sw-hdr{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;margin-bottom:1rem;padding:1.2rem 1.4rem;background:var(--panel-bg,#fff);border:1px solid var(--border,rgba(0,0,0,.06));border-radius:14px;box-shadow:0 1px 8px rgba(0,0,0,.03)}'+
 '.sw-hname{font-size:1.4rem;font-weight:700;margin:0;color:var(--foreground,#1d1d1f);border:none!important}'+
 '.sw-hdr-right{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}'+
@@ -270,7 +270,7 @@ return view.extend({
 '.sw-ota-pill{background:linear-gradient(135deg,#007aff,#5856d6);color:#fff!important;cursor:pointer;text-decoration:none;font-weight:700}'+
 '.sw-ota-pill:hover{opacity:.88}'+
 '@keyframes swPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.85;transform:scale(1.02)}}'+
-'.sw-card{background:var(--panel-bg,#fff);border:1px solid var(--border,rgba(0,0,0,.06));border-radius:14px;padding:1.2rem 1.4rem;margin-bottom:1rem;box-shadow:0 1px 8px rgba(0,0,0,.03)}'+
+'.sw-card{box-sizing:border-box;min-width:0;background:var(--panel-bg,#fff);border:1px solid var(--border,rgba(0,0,0,.06));border-radius:14px;padding:1.2rem 1.4rem;margin-bottom:1rem;box-shadow:0 1px 8px rgba(0,0,0,.03)}'+
 '.sw-card-t{font-size:.8rem;font-weight:700;margin-bottom:.8rem;padding-bottom:.6rem;border-bottom:1px solid var(--border,rgba(0,0,0,.05));display:flex;align-items:center;gap:.5rem;color:var(--foreground,#1d1d1f);text-transform:uppercase;letter-spacing:.03em;opacity:.65}'+
 '.sw-ic-wrap{display:inline-flex;align-items:center;justify-content:center;opacity:.7}'+
 '.sw-ic-wrap svg{width:16px;height:16px;stroke-width:2.5}'+
@@ -278,7 +278,7 @@ return view.extend({
 '.sw-spd-dl{color:#007aff}.sw-spd-ul{color:#5856d6}'+
 '.sw-chart-wrap{width:100%;height:210px;position:relative;margin-top:.5rem}'+
 '.sw-chart-wrap canvas{position:absolute;top:0;left:0}'+
-'.sw-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}'+
+'.sw-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:1rem;min-width:0}'+
 '@media(max-width:768px){.sw-row{grid-template-columns:1fr}}'+
 '.sw-res-item{display:flex;align-items:center;gap:.5rem;margin-bottom:.7rem}'+
 '.sw-res-label{font-size:.82rem;font-weight:700;min-width:34px}'+
@@ -287,21 +287,17 @@ return view.extend({
 '.sw-res-val{font-size:.82rem;font-weight:700;min-width:40px;text-align:right}'+
 '.sw-bar{height:5px;background:rgba(127,127,127,.12);border-radius:10px;overflow:hidden;flex:1}'+
 '.sw-bar-fill{height:100%;border-radius:10px;transition:width .6s ease}'+
-'.sw-if-item{display:flex;align-items:center;gap:.6rem;padding:.5rem 0;border-bottom:1px solid var(--border,rgba(0,0,0,.04))}'+
+'.sw-if-item{display:flex;align-items:center;gap:.6rem;min-width:0;padding:.5rem 0;border-bottom:1px solid var(--border,rgba(0,0,0,.04))}'+
 '.sw-if-item:last-child{border:none}'+
 '.sw-if-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}'+
-'.sw-if-name{font-weight:700;font-size:.88rem}'+
-'.sw-if-meta{font-size:.78rem;opacity:.35;margin-left:3px}'+
-'.sw-if-ip{font-family:ui-monospace,monospace;font-size:.82rem;margin-left:auto;opacity:.55}'+
-'.sw-footer{display:flex;gap:.6rem;margin-top:1.2rem;flex-wrap:wrap}'+
-'.sw-btn{background:rgba(127,127,127,.07);border:1px solid var(--border,rgba(0,0,0,.06));color:var(--foreground,#1d1d1f);padding:9px 20px;border-radius:10px;font-size:.85rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:all .15s ease;line-height:1.3}'+
-'.sw-btn svg{flex-shrink:0;width:15px;height:15px;vertical-align:middle}'+
-'.sw-btn:hover{background:#007aff;color:#fff;border-color:#007aff;transform:translateY(-1px);box-shadow:0 3px 10px rgba(0,122,255,.2)}'+
-'.sw-btn:active{transform:translateY(0)}'+
+'.sw-if-name{font-weight:700;font-size:.88rem;flex-shrink:0}'+
+'.sw-if-meta{font-size:.78rem;opacity:.35;margin-left:3px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'+
+'.sw-if-ip{font-family:ui-monospace,monospace;font-size:.82rem;margin-left:auto;opacity:.55;min-width:0;max-width:58%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}'+
+'.sw-if-ip>span{display:block;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}'+
 '.sw-tooltip{position:fixed;display:none;background:var(--panel-bg,#fff);border:1px solid var(--border,rgba(0,0,0,.1));border-radius:8px;padding:6px 10px;font-size:.78rem;line-height:1.5;box-shadow:0 4px 14px rgba(0,0,0,.1);z-index:9999;pointer-events:none}'+
 '.sw-dev-header{display:flex;justify-content:space-between;align-items:center}'+
 '.sw-dev-count{font-size:.8rem;font-weight:600;opacity:.4;text-transform:none;letter-spacing:0}'+
-'.sw-dev-list{margin-top:1rem;display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px}'+
+'.sw-dev-list{margin-top:1rem;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(340px,100%),1fr));gap:12px;min-width:0}'+
 '.sw-dev-row{display:flex;align-items:center;gap:.5rem;padding:.7rem .8rem;border:1px solid var(--border,rgba(0,0,0,.06));border-radius:10px;background:rgba(127,127,127,.02)}'+
 '.sw-dev-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;background:#34c759}'+
 '.sw-dev-info{flex:1;min-width:0}'+
@@ -419,12 +415,6 @@ return view.extend({
 					E('span',{class:'sw-dev-count',id:'sw-dev-count'},['--'])
 				]),
 				E('div',{class:'sw-dev-list',id:'sw-dev-list'})
-			]),
-			/* Footer buttons */
-			E('div',{class:'sw-footer'},[
-				E('button',{class:'sw-btn',click:function(){location.href=L.url('admin/network/wireless');}},[E('span',{innerHTML:IC.wifi}),'\u65e0\u7ebf\u8bbe\u7f6e']),
-				E('button',{class:'sw-btn',click:function(){location.href=L.url('admin/system/shawnwrt-ota');}},[E('span',{innerHTML:IC.ota}),'\u7cfb\u7edf\u5347\u7ea7']),
-				E('button',{class:'sw-btn',click:function(){if(confirm('\u786e\u5b9a\u91cd\u542f\u8def\u7531\u5668\uff1f'))location.href=L.url('admin/system/reboot');}},[E('span',{innerHTML:IC.power}),'\u91cd\u542f'])
 			])
 		]);
 
@@ -440,7 +430,7 @@ return view.extend({
 				var dev=f.l3_device||f.device||'';
 				var up=!!f.up;
 				var isWan = (f.interface==='wan'||f.interface==='wan6');
-				var txtNode = E('span', {}, [addrs]);
+				var txtNode = E('span', {title:addrs}, [addrs]);
 				
 				if(isWan) {
 				    var displayIp = addrs;
@@ -453,10 +443,12 @@ return view.extend({
 						        var fullIp = m[1]+' ('+m[2].trim()+')';
 						        wanIpCache[f.interface] = fullIp;
 						        txtNode.textContent = wanEyeVisible ? fullIp : maskIp(fullIp);
+						        txtNode.title = fullIp;
 						    }
 					    }).catch(function(){});
 				    }
 				    txtNode.textContent = wanEyeVisible ? displayIp : maskIp(displayIp);
+				    txtNode.title = displayIp;
 				}
 				
 				var ipSpan=E('div',{class:'sw-if-ip', style:'display:flex;align-items:center;justify-content:flex-end'},[txtNode]);

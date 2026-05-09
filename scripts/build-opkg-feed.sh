@@ -249,7 +249,7 @@ install -m 0644 \
 	"${repo_root}/openwrt/luci-app-shawnwrt-index/luasrc/controller/index.lua" \
 	"${index_data}/usr/lib/lua/luci/controller/index.lua"
 build_ipk "luci-app-shawnwrt-index" "${index_version}" "${index_release}" \
-	"luci-base" \
+	"luci-base, luci-lua-runtime" \
 	"ShawnWrt Index homepage" "${index_data}"
 rm -rf "${index_data}"
 
