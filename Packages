@@ -1,0 +1,48 @@
+Package: luci-app-shawnwrt-channel-analysis
+Version: 1.0.3-2
+Architecture: all
+Maintainer: Shawn Rain
+Section: admin
+Priority: optional
+Depends: rpcd-mod-iwinfo, iwinfo
+Description: ShawnWrt MTK channel analysis
+Filename: luci-app-shawnwrt-channel-analysis_1.0.3-2_all.ipk
+Size: 22069
+SHA256sum: 1a32908955c003a2478f0b4899f342c27249c5fba84b61251db41094b48abe32
+
+Package: luci-app-shawnwrt-index
+Version: 1.0.5-6
+Architecture: all
+Maintainer: Shawn Rain
+Section: admin
+Priority: optional
+Depends: luci-base, luci-lua-runtime
+Description: ShawnWrt Index homepage
+Filename: luci-app-shawnwrt-index_1.0.5-6_all.ipk
+Size: 13776
+SHA256sum: 8405549faae0eb496328601af654d08640976675f49bfa6005bccf41ebdc2fef
+
+Package: luci-app-shawnwrt-ota
+Version: 1.0.15-1
+Architecture: all
+Maintainer: Shawn Rain
+Section: admin
+Priority: optional
+Depends: shawnwrt-ota, luci-base
+Description: LuCI support for ShawnWrt OTA
+Filename: luci-app-shawnwrt-ota_1.0.15-1_all.ipk
+Size: 5500
+SHA256sum: dde8153dbf31493bf2ed85824c133bdfea57a0e27e648259055eeb16beb97769
+
+Package: shawnwrt-ota
+Version: 1.0.11-1
+Architecture: all
+Maintainer: Shawn Rain
+Section: admin
+Priority: optional
+Depends: curl, jsonfilter, libubus, busybox
+Description: ShawnWrt OTA updater
+Filename: shawnwrt-ota_1.0.11-1_all.ipk
+Size: 5063
+SHA256sum: 19ae0b88fb88b805851cd432382adb10f83c1bdf1e6cad44ea130e30360d76bb
+
